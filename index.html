@@ -2,287 +2,329 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Warehouse Dashboard Enhanced</title>
+<title>Warehouse Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 
 <style>
 :root{
- --bg:#020617; --card:#111827; --accent:#22c55e;
- --warning:#f59e0b; --text:#e5e7eb; --muted:#94a3b8;
+ --bg:#0f172a;
+ --sidebar:#020617;
+ --card:#111827;
+ --accent:#22c55e;
+ --warning:#f59e0b;
+ --partial:#3b82f6;
+ --text:#e5e7eb;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{background:#0f172a;color:var(--text);}
-.hidden{display:none;}
-header{display:flex;align-items:center;padding:14px 22px;background:#111827;border-bottom:1px solid #1f2937;}
-header h1{color:var(--accent);font-size:22px}
-.container{padding:20px;display:grid;gap:20px}
-.card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 6px 25px rgba(0,0,0,.35);}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:15px;text-align:center;}
-.kpi{cursor:pointer}
-.kpi .value{font-size:30px;font-weight:700;}
-.success{color:var(--accent);}
-.warning{color:var(--warning);}
-.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-top:15px;}
-.insight{background:#020617;padding:14px;border-radius:14px;}
-.insight h4{font-size:14px;color:var(--muted);}
-.insight p{font-size:22px;font-weight:700;margin-top:5px;}
-.pending-card{background:#020617;padding:14px;border-radius:14px;margin-bottom:10px;}
-.pending-card h3{color:var(--accent)}
-select,input,button{padding:6px;border-radius:6px;border:none;background:#020617;color:white;cursor:pointer}
+body{background:var(--bg);color:var(--text);}
+.hidden{display:none!important}
+
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:var(--sidebar);padding:20px;display:flex;flex-direction:column;gap:20px}
+.sidebar h2{color:var(--accent)}
+.sidebar a{color:var(--text);text-decoration:none;padding:10px;border-radius:8px}
+.sidebar a:hover{background:#111827}
+.main{padding:20px}
+
+.card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+.kpi{background:#020617;padding:18px;border-radius:14px;text-align:center;cursor:pointer}
+.kpi .value{font-size:32px;font-weight:700;margin-top:6px}
+.success{color:var(--accent)}
+.warning{color:var(--warning)}
+.partial{color:var(--partial)}
+
+input,button{padding:8px;border-radius:8px;border:none;background:#020617;color:white}
+button{cursor:pointer}
+
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid #333;padding:8px;text-align:center}
+th{background:#111827;color:var(--accent)}
+
+.warehouse-card{background:#020617;padding:14px;border-radius:14px;margin-bottom:12px}
+
+#loginContainer{height:100vh;display:flex;align-items:center;justify-content:center}
+
+#orderDetails{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:999}
+#orderDetails .card{width:90%;max-width:800px;max-height:85vh;overflow:auto}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginContainer" style="height:100vh;display:flex;align-items:center;justify-content:center">
+<div id="loginContainer">
 <form id="loginForm" class="card" style="width:320px">
  <h2 style="text-align:center;color:var(--accent)">Login</h2>
- <input id="username" placeholder="Username" required style="width:100%;padding:10px;margin:10px 0">
- <input id="password" type="password" placeholder="Password" required style="width:100%;padding:10px">
- <button style="margin-top:12px;width:100%;padding:10px;background:var(--accent);border:none;font-weight:700">Login</button>
+ <input id="username" placeholder="Username" required style="width:100%;margin:10px 0">
+ <input id="password" type="password" placeholder="Password" required style="width:100%">
+ <button style="margin-top:12px;width:100%;background:var(--accent)">Login</button>
  <p id="loginError" class="warning hidden">Invalid credentials</p>
 </form>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="hidden">
-<header style="justify-content:space-between;position:relative">
- <h1><i class="fa-solid fa-warehouse"></i> My Holdal</h1>
- <div style="position:relative">
-   <button id="menuBtn" style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer">
-     Menu <i class="fa-solid fa-caret-down"></i>
-   </button>
-   <div id="menuDropdown" style="display:none;position:absolute;right:0;top:30px;background:var(--card);border-radius:8px;box-shadow:0 6px 15px rgba(0,0,0,0.3);">
-     <button onclick="showReturns()" style="display:block;padding:10px 15px;width:100%;text-align:left;border:none;background:none;color:var(--text);cursor:pointer">Returns</button>
-     <button onclick="signOut()" style="display:block;padding:10px 15px;width:100%;text-align:left;border:none;background:none;color:var(--text);cursor:pointer">Sign Out</button>
-   </div>
- </div>
+<div id="dashboard" class="hidden app">
+
+<aside class="sidebar">
+ <h2><i class="fa-solid fa-warehouse"></i> My Holdal</h2>
+ <a href="#">Dashboard</a>
+ <a href="#">Warehouses</a>
+ <a href="#" onclick="signOut()" style="color:#ef4444">Logout</a>
+</aside>
+
+<main class="main">
+
+<header style="margin-bottom:20px;display:flex;justify-content:space-between">
+ <h3>Warehouse Management</h3>
+ <input type="date" id="dateFilter" onchange="updateDashboard()">
 </header>
-
-<div class="container">
-
-<!-- FILTERS -->
-<div class="card" style="display:flex;gap:15px;flex-wrap:wrap">
- <div>
-  <label style="color:var(--muted)">Date</label><br>
-  <input type="date" id="dateFilter" onchange="updateDashboard()">
- </div>
- <div>
-  <label style="color:var(--muted)">Distribution</label><br>
-  <select id="distributionFilter" onchange="updateDashboard()">
-   <option value="all">All</option>
-   <option value="LMD">LMD</option>
-   <option value="Wakilni">Wakilni</option>
-   <option value="Employee">Employee</option>
-  </select>
- </div>
-</div>
-
-<!-- KPIS -->
-<div class="card">
-<h2 style="color:var(--accent)">Report Summary</h2>
 
 <div class="kpis">
  <div class="kpi" onclick="showOrderDetails('total')">
-  <div>Total</div><div id="total" class="value">0</div>
+  <div>Total Orders</div>
+  <div id="total" class="value">0</div>
  </div>
  <div class="kpi" onclick="showOrderDetails('completed')">
-  <div>Completed</div><div id="completed" class="value success">0</div>
+  <div>Completed</div>
+  <div id="completed" class="value success">0</div>
+ </div>
+ <div class="kpi" onclick="showOrderDetails('partial')">
+  <div>Partial</div>
+  <div id="partial" class="value partial">0</div>
  </div>
  <div class="kpi" onclick="showOrderDetails('pending')">
-  <div>Pending</div><div id="pending" class="value warning">0</div>
+  <div>Pending</div>
+  <div id="pending" class="value warning">0</div>
  </div>
 </div>
 
-<div class="insights">
- <div class="insight"><h4>Completion Rate</h4><p id="performance">-</p></div>
- <div class="insight"><h4>Oldest Pending</h4><p id="oldest">-</p></div>
-</div>
-</div>
-
-<!-- DISTRIBUTION BREAKDOWN -->
-<div class="card" id="distributionBreakdown" style="display:none">
- <h2 style="color:var(--accent)">Distribution Breakdown</h2>
- <div id="distributionCards" class="insights"></div>
+<div class="card" style="margin-top:20px">
+ <h3 style="color:var(--accent)">Warehouse Breakdown</h3>
+ <div id="warehouseBreakdownTable"></div>
 </div>
 
-<!-- ORDER DETAILS -->
-<div id="orderDetails" class="card hidden"
-style="position:fixed;top:40px;left:50%;transform:translateX(-50%);
-width:90%;max-width:700px;max-height:80vh;overflow:auto;z-index:200;">
-<button onclick="closeOrderDetails()" style="float:right;background:#ef4444;color:#fff;padding:6px 10px;border:none;border-radius:6px;">Close</button>
-<h3 style="color:var(--accent)">Order Details</h3>
-<div id="orderList"></div>
+<div class="card" style="margin-top:20px">
+ <h3 style="color:var(--accent)">Warehouse Chart</h3>
+ <canvas id="warehouseChart"></canvas>
 </div>
 
+</main>
 </div>
+
+<div id="orderDetails" class="hidden">
+ <div class="card">
+  <button onclick="closeOrderDetails()" style="float:right;background:#ef4444">Close</button>
+  <h3 style="color:var(--accent)">Order Details</h3>
+  <div id="orderList"></div>
+ </div>
 </div>
 
 <script>
-// DOM Elements
-const loginForm = document.getElementById("loginForm");
-const username = document.getElementById("username");
-const password = document.getElementById("password");
-const loginError = document.getElementById("loginError");
-const loginContainer = document.getElementById("loginContainer");
-const dashboard = document.getElementById("dashboard");
+const users=[{username:"manager",password:"123456"}];
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
+let allOrders=[];
 
-const dateFilter = document.getElementById("dateFilter");
-const distributionFilter = document.getElementById("distributionFilter");
-
-const total = document.getElementById("total");
-const completed = document.getElementById("completed");
-const pending = document.getElementById("pending");
-const performance = document.getElementById("performance");
-const oldest = document.getElementById("oldest");
-
-const distributionBreakdown = document.getElementById("distributionBreakdown");
-const distributionCards = document.getElementById("distributionCards");
-const orderDetails = document.getElementById("orderDetails");
-const orderList = document.getElementById("orderList");
-
-// USERS
-const users=[
- {username:"pncUser",password:"123456",warehouse:"p&c---pack",role:"user"},
- {username:"pharmaUser",password:"123456",warehouse:"pharma---pack",role:"user"},
- {username:"lorealUser",password:"123456",warehouse:"loreal---pack",role:"user"},
- {username:"manager",password:"123456",warehouse:"all",role:"manager"}
-];
-
-let currentUser=null, allOrders=[];
-const sheetURL="https://docs.google.com/spreadsheets/d/1BbhpLwCeajK7GFKHvf_iVu9I4LC65PoPKb-gHUJIiOI/export?format=csv";
-
-// LOGIN
 loginForm.onsubmit=e=>{
  e.preventDefault();
- const u=users.find(x=>x.username===username.value && x.password===password.value);
- if(!u) return loginError.classList.remove("hidden");
- currentUser=u;
+ const u=users.find(x=>x.username===username.value&&x.password===password.value);
+ if(!u){loginError.classList.remove("hidden");return;}
  loginContainer.style.display="none";
  dashboard.classList.remove("hidden");
  loadData();
 };
 
-// NORMALIZE DISTRIBUTION
-function normalize(v){return v?.trim().toLowerCase();}
-function normalizeDistribution(v){
- if(!v) return "Other";
- v=v.toLowerCase();
- if(v.includes("lmd")) return "LMD";
- if(v.includes("wakilni")) return "Wakilni";
- if(v.includes("employee")) return "Employee";
- return "Other";
+function formatDateForInput(d){
+ if(!d||!d.includes("/"))return"";
+ const p=d.split("/");
+ return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
 }
 
-// تحويل تاريخ الشيت من DD/MM/YYYY HH:MM إلى YYYY-MM-DD
-function formatDateForInput(d) {
-  const parts = d.split(" ")[0].split("/"); // ["30","12","2025"]
-  return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-}
-
-// LOAD DATA
 function loadData(){
  fetch(sheetURL).then(r=>r.text()).then(csv=>{
-  const data=Papa.parse(csv,{header:true,skipEmptyLines:true}).data;
-  allOrders=data.map(r=>{
-   const distribution=normalizeDistribution(r["Distribution"]);
-   const status=(distribution==="LMD"||distribution==="Wakilni"||distribution==="Employee")?"completed":"pending";
-   return{
-    warehouse:normalize(r["Warehouse Name"]),
-    distribution,
-    status,
-    date: r["Snapshot_Date"] ? formatDateForInput(r["Snapshot_Date"]) : "",
-    raw:r
-   };
+  const rows=Papa.parse(csv,{header:true,skipEmptyLines:true}).data;
+  const map={};
+
+  rows.forEach(r=>{
+   const id=r["#M Order"];
+   if(!id)return;
+
+   if(!map[id]){
+     map[id]={orderNo:id,date:formatDateForInput(r["Snapshot_Date"]),wh:{}};
+   }
+
+   let whName=(r["Warehouse Name"]||"").toLowerCase();
+   const base=whName.replace(/---pack/g,"").replace(/\s*wh/g,"").trim();
+   const distValue=(r["Distribution"]||"").toUpperCase();
+   const distributed=(distValue==="LMD"||distValue==="WAKILNI"||distValue==="EMPLOYEE");
+
+   if(!map[id].wh[base]){
+     map[id].wh[base]={base,packed:false,distributed};
+   } else {
+     // إذا أكثر من مستودع، ضع distributed واحد فقط
+     map[id].wh[base].distributed = map[id].wh[base].distributed || distributed;
+   }
+
+   if(whName.includes("pack")) map[id].wh[base].packed=true;
   });
+
+  allOrders=Object.values(map).map(o=>{
+   const w=Object.values(o.wh);
+   const packed=w.filter(x=>x.packed).length;
+   let status="pending";
+   if(packed===w.length)status="completed";
+   else if(packed>0)status="partial";
+   return{...o,status,warehouses:w};
+  });
+
   initDate();
   updateDashboard();
  });
 }
 
-// INIT DATE
 function initDate(){
- if(!dateFilter.value){
-  const d=[...new Set(allOrders.map(o=>o.date).filter(Boolean))].sort();
-  dateFilter.value=d[d.length-1];
- }
+ const d=[...new Set(allOrders.map(o=>o.date))].filter(Boolean).sort();
+ if(d.length)dateFilter.value=d[d.length-1];
 }
 
-// APPLY FILTERS
 function applyFilters(){
- let orders=allOrders;
- if(dateFilter.value) orders=orders.filter(o=>o.date===dateFilter.value);
- if(currentUser.warehouse!=="all")
-  orders=orders.filter(o=>o.warehouse===normalize(currentUser.warehouse));
- if(distributionFilter.value!=="all")
-  orders=orders.filter(o=>o.distribution===distributionFilter.value);
- return orders;
+ return allOrders.filter(o=>!dateFilter.value||o.date===dateFilter.value);
 }
 
-// UPDATE DASHBOARD
 function updateDashboard(){
- const orders=applyFilters();
- total.textContent=orders.length;
- completed.textContent=orders.filter(o=>o.status==="completed").length;
- pending.textContent=orders.filter(o=>o.status==="pending").length;
- performance.textContent=orders.length
-  ?Math.round((completed.textContent/orders.length)*100)+"%"
-  :"0%";
-
- // Show oldest pending order number
- const pendingOrders = orders
-   .filter(o => o.status === "pending" && o.date)
-   .sort((a,b) => new Date(a.date) - new Date(b.date));
- oldest.textContent = pendingOrders.length ? pendingOrders[0].raw["#M Order"] : "-";
-
- if(currentUser.role==="manager") renderDistributionBreakdown(orders);
+ const o=applyFilters();
+ total.textContent=o.length;
+ completed.textContent=o.filter(x=>x.status==="completed").length;
+ partial.textContent=o.filter(x=>x.status==="partial").length;
+ pending.textContent=o.filter(x=>x.status==="pending").length;
+ renderWarehouseBreakdown(o);
+ renderWarehouseChart(o);
 }
 
-// DISTRIBUTION BREAKDOWN
-function renderDistributionBreakdown(orders){
- distributionBreakdown.style.display="block";
- const map={};
- orders.forEach(o=>map[o.distribution]=(map[o.distribution]||0)+1);
- distributionCards.innerHTML=Object.entries(map).map(([d,v])=>
-  `<div class="insight"><h4>${d}</h4><p>${v}</p></div>`
- ).join('');
+function renderWarehouseBreakdown(orders){
+ const m={};
+ orders.forEach(o=>{
+  o.warehouses.forEach(w=>{
+   if(!m[w.base])m[w.base]={t:0,c:0,p:0,n:0};
+   m[w.base].t++;
+   if(o.status==="completed") m[w.base].c++;
+   else if(o.status==="partial") m[w.base].p++;
+   else m[w.base].n++;
+  });
+ });
+
+ warehouseBreakdownTable.innerHTML=`
+ <table>
+  <thead>
+   <tr>
+    <th>Warehouse</th>
+    <th>Total</th>
+    <th>Completed</th>
+    <th>Partial</th>
+    <th>Pending</th>
+   </tr>
+  </thead>
+  <tbody>
+   ${Object.entries(m).map(([k,v])=>`
+    <tr>
+     <td>${k}</td>
+     <td><a href="#" onclick="showWarehouseOrders('${k}','total')">${v.t}</a></td>
+     <td><a href="#" onclick="showWarehouseOrders('${k}','completed')">${v.c}</a></td>
+     <td><a href="#" onclick="showWarehouseOrders('${k}','partial')">${v.p}</a></td>
+     <td><a href="#" onclick="showWarehouseOrders('${k}','pending')">${v.n}</a></td>
+    </tr>
+   `).join("")}
+  </tbody>
+ </table>
+ `;
 }
 
-// ORDER DETAILS
+function showWarehouseOrders(warehouse,type){
+ let filtered=applyFilters().filter(o=>o.warehouses.some(w=>w.base===warehouse));
+ if(type!=="total") filtered=filtered.filter(o=>o.status===type);
+
+ displayOrders(filtered);
+}
+
 function showOrderDetails(type){
- let orders=applyFilters();
- if(type!=="total") orders=orders.filter(o=>o.status===type);
- orderList.innerHTML=orders.map(o=>`
- <div class="pending-card">
-  <h3>${o.raw["#M Order"]||"-"}</h3>
-  <p>Warehouse: ${o.raw["Warehouse Name"]}</p>
-  <p>Distribution: <b>${o.distribution}</b></p>
-  <p>Status: ${o.status}</p>
- </div>`).join('');
+ let o=applyFilters();
+ if(type!=="total") o=o.filter(x=>x.status===type);
+
+ displayOrders(o);
+}
+
+function displayOrders(orders){
+ const singleWarehouse=orders.filter(x=>x.warehouses.length===1);
+ const multiWarehouse=orders.filter(x=>x.warehouses.length>1);
+
+ orderList.innerHTML="";
+
+ if(singleWarehouse.length){
+  orderList.innerHTML+=`<h4>Single Warehouse Orders</h4>`;
+  singleWarehouse.forEach(x=>{
+   orderList.innerHTML+=`
+   <div class="warehouse-card">
+    <b>Order:</b> ${x.orderNo} - ${x.status}<br>
+    <ul style="margin-top:6px;padding-left:18px">
+     ${x.warehouses.map(w=>`
+      <li>${w.base} - ${w.packed?'Packed':'Not Packed'} | Distributed: ${w.distributed?'✅':'❌'}</li>
+     `).join("")}
+    </ul>
+   </div>
+   `;
+  });
+ }
+
+ if(multiWarehouse.length){
+  orderList.innerHTML+=`<h4>Multi-Warehouse Orders</h4>`;
+  multiWarehouse.forEach(x=>{
+   orderList.innerHTML+=`
+   <div class="warehouse-card">
+    <b>Order:</b> ${x.orderNo} - ${x.status}<br>
+    <b>Distributed:</b> ${x.warehouses.some(w=>w.distributed)?'✅':'❌'}<br>
+    <ul style="margin-top:6px;padding-left:18px">
+     ${x.warehouses.map(w=>`
+      <li>${w.base} - ${w.packed?'Packed':'Not Packed'}</li>
+     `).join("")}
+    </ul>
+   </div>
+   `;
+  });
+ }
+
  orderDetails.classList.remove("hidden");
 }
-function closeOrderDetails(){orderDetails.classList.add("hidden");}
 
-// MENU DROPDOWN
-const menuBtn = document.getElementById("menuBtn");
-const menuDropdown = document.getElementById("menuDropdown");
-menuBtn.addEventListener("click", ()=>{
- menuDropdown.style.display = menuDropdown.style.display==="block" ? "none" : "block";
-});
-window.addEventListener("click", function(e){
- if(!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)){
-   menuDropdown.style.display = "none";
- }
-});
-function showReturns(){ alert("سيتم عرض Returns هنا (يمكن عمل popup أو صفحة لاحقًا)"); }
-function signOut(){
- dashboard.classList.add("hidden");
- loginContainer.style.display="flex";
+function closeOrderDetails(){orderDetails.classList.add("hidden")}
+function signOut(){location.reload()}
+
+function renderWarehouseChart(orders){
+ const m={};
+ orders.forEach(o=>{
+  o.warehouses.forEach(w=>{
+   if(!m[w.base])m[w.base]={c:0,p:0,n:0};
+   if(o.status==="completed")m[w.base].c++;
+   else if(o.status==="partial")m[w.base].p++;
+   else m[w.base].n++;
+  });
+ });
+ const labels=Object.keys(m);
+ if(window.wChart)wChart.destroy();
+ wChart=new Chart(warehouseChart,{
+  type:"bar",
+  data:{
+   labels,
+   datasets:[
+    {label:"Completed",data:labels.map(l=>m[l].c),backgroundColor:"#22c55e"},
+    {label:"Partial",data:labels.map(l=>m[l].p),backgroundColor:"#3b82f6"},
+    {label:"Pending",data:labels.map(l=>m[l].n),backgroundColor:"#f59e0b"}
+   ]
+  },
+  options:{responsive:true,scales:{y:{beginAtZero:true}}}
+ });
 }
 </script>
 
