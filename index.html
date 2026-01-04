@@ -1,222 +1,342 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Warehouse Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>Warehouse Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 
-<style>
-:root{
- --bg:#0f172a;
- --sidebar:#020617;
- --card:#111827;
- --accent:#22c55e;
- --warning:#f59e0b;
- --partial:#3b82f6;
- --text:#e5e7eb;
-}
-*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
-body{background:var(--bg);color:var(--text);}
-.hidden{display:none!important}
+  <style>
+    :root {
+      --bg: #0f172a;
+      --sidebar: #020617;
+      --card: #111827;
+      --accent: #22c55e;
+      --warning: #f59e0b;
+      --partial: #3b82f6;
+      --text: #e5e7eb;
+    }
 
-.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-.sidebar{background:var(--sidebar);padding:20px;display:flex;flex-direction:column;gap:20px}
-.sidebar h2{color:var(--accent)}
-.sidebar a{color:var(--text);text-decoration:none;padding:10px;border-radius:8px}
-.sidebar a:hover{background:#111827}
-.main{padding:20px}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Inter, sans-serif;
+    }
 
-.card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
-.kpi{background:#020617;padding:18px;border-radius:14px;text-align:center;cursor:pointer}
-.kpi .value{font-size:32px;font-weight:700;margin-top:6px}
-.success{color:var(--accent)}
-.warning{color:var(--warning)}
-.partial{color:var(--partial)}
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
 
-input,button{padding:8px;border-radius:8px;border:none;background:#020617;color:white}
-button{cursor:pointer}
+    .hidden {
+      display: none !important
+    }
 
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{border:1px solid #333;padding:8px;text-align:center}
-th{background:#111827;color:var(--accent)}
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh
+    }
 
-.warehouse-card{background:#020617;padding:14px;border-radius:14px;margin-bottom:12px}
+    .sidebar {
+      background: var(--sidebar);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px
+    }
 
-#loginContainer{height:100vh;display:flex;align-items:center;justify-content:center}
+    .sidebar h2 {
+      color: var(--accent)
+    }
 
-#orderDetails{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:999}
-#orderDetails .card{width:90%;max-width:800px;max-height:85vh;overflow:auto}
-</style>
+    .sidebar a {
+      color: var(--text);
+      text-decoration: none;
+      padding: 10px;
+      border-radius: 8px
+    }
+
+    .sidebar a:hover {
+      background: #111827
+    }
+
+    .main {
+      padding: 20px
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .35)
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px
+    }
+
+    .kpi {
+      background: #020617;
+      padding: 18px;
+      border-radius: 14px;
+      text-align: center;
+      cursor: pointer
+    }
+
+    .kpi .value {
+      font-size: 32px;
+      font-weight: 700;
+      margin-top: 6px
+    }
+
+    .success {
+      color: var(--accent)
+    }
+
+    .warning {
+      color: var(--warning)
+    }
+
+    .partial {
+      color: var(--partial)
+    }
+
+    input,
+    button {
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      background: #020617;
+      color: white
+    }
+
+    button {
+      cursor: pointer
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px
+    }
+
+    th,
+    td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: center
+    }
+
+    th {
+      background: #111827;
+      color: var(--accent)
+    }
+
+    .warehouse-card {
+      background: #020617;
+      padding: 14px;
+      border-radius: 14px;
+      margin-bottom: 12px
+    }
+
+    #loginContainer {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    #orderDetails {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999
+    }
+
+    #orderDetails .card {
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      overflow: auto
+    }
+  </style>
 </head>
 
 <body>
 
-<div id="loginContainer">
-<form id="loginForm" class="card" style="width:320px">
- <h2 style="text-align:center;color:var(--accent)">Login</h2>
- <input id="username" placeholder="Username" required style="width:100%;margin:10px 0">
- <input id="password" type="password" placeholder="Password" required style="width:100%">
- <button style="margin-top:12px;width:100%;background:var(--accent)">Login</button>
- <p id="loginError" class="warning hidden">Invalid credentials</p>
-</form>
-</div>
+  <div id="loginContainer">
+    <form id="loginForm" class="card" style="width:320px">
+      <h2 style="text-align:center;color:var(--accent)">Login</h2>
+      <input id="username" placeholder="Username" required style="width:100%;margin:10px 0">
+      <input id="password" type="password" placeholder="Password" required style="width:100%">
+      <button style="margin-top:12px;width:100%;background:var(--accent)">Login</button>
+      <p id="loginError" class="warning hidden">Invalid credentials</p>
+    </form>
+  </div>
 
-<div id="dashboard" class="hidden app">
+  <div id="dashboard" class="hidden app">
 
-<aside class="sidebar">
- <h2><i class="fa-solid fa-warehouse"></i> My Holdal</h2>
- <a href="#">Dashboard</a>
- <a href="#">Warehouses</a>
- <a href="#" onclick="signOut()" style="color:#ef4444">Logout</a>
-</aside>
+    <aside class="sidebar">
+      <h2><i class="fa-solid fa-warehouse"></i> My Holdal</h2>
+      <a href="#">Dashboard</a>
+      <a href="#">Warehouses</a>
+     <a href="#">Distribution</a>
+      <a href="#" onclick="signOut()" style="color:#ef4444">Logout</a>
+    </aside>
 
-<main class="main">
+    <main class="main">
 
-<header style="margin-bottom:20px;display:flex;justify-content:space-between">
- <h3>Warehouse Management</h3>
- <input type="date" id="dateFilter" onchange="updateDashboard()">
-</header>
+      <header style="margin-bottom:20px;display:flex;justify-content:space-between">
+        <h3>Warehouse Management</h3>
+        <input type="date" id="dateFilter" onchange="updateDashboard()">
+      </header>
 
-<div class="kpis">
- <div class="kpi" onclick="showOrderDetails('total')">
-  <div>Total Orders</div>
-  <div id="total" class="value">0</div>
- </div>
- <div class="kpi" onclick="showOrderDetails('completed')">
-  <div>Completed</div>
-  <div id="completed" class="value success">0</div>
- </div>
- <div class="kpi" onclick="showOrderDetails('partial')">
-  <div>Partial</div>
-  <div id="partial" class="value partial">0</div>
- </div>
- <div class="kpi" onclick="showOrderDetails('pending')">
-  <div>Pending</div>
-  <div id="pending" class="value warning">0</div>
- </div>
-</div>
+      <div class="kpis">
+        <div class="kpi" onclick="showOrderDetails('total')">
+          <div>Total Orders</div>
+          <div id="total" class="value">0</div>
+        </div>
+        <div class="kpi" onclick="showOrderDetails('completed')">
+          <div>Completed</div>
+          <div id="completed" class="value success">0</div>
+        </div>
+        <div class="kpi" onclick="showOrderDetails('partial')">
+          <div>Partial</div>
+          <div id="partial" class="value partial">0</div>
+        </div>
+        <div class="kpi" onclick="showOrderDetails('pending')">
+          <div>Pending</div>
+          <div id="pending" class="value warning">0</div>
+        </div>
+      </div>
 
-<div class="card" style="margin-top:20px">
- <h3 style="color:var(--accent)">Warehouse Breakdown</h3>
- <div id="warehouseBreakdownTable"></div>
-</div>
+      <div class="card" style="margin-top:20px">
+        <h3 style="color:var(--accent)">Warehouse Breakdown</h3>
+        <div id="warehouseBreakdownTable"></div>
+      </div>
 
-<div class="card" style="margin-top:20px">
- <h3 style="color:var(--accent)">Warehouse Chart</h3>
- <canvas id="warehouseChart"></canvas>
-</div>
+      <div class="card" style="margin-top:20px">
+        <h3 style="color:var(--accent)">Warehouse Chart</h3>
+        <canvas id="warehouseChart"></canvas>
+      </div>
 
-</main>
-</div>
+    </main>
+  </div>
 
-<div id="orderDetails" class="hidden">
- <div class="card">
-  <button onclick="closeOrderDetails()" style="float:right;background:#ef4444">Close</button>
-  <h3 style="color:var(--accent)">Order Details</h3>
-  <div id="orderList"></div>
- </div>
-</div>
+  <div id="orderDetails" class="hidden">
+    <div class="card">
+      <button onclick="closeOrderDetails()" style="float:right;background:#ef4444">Close</button>
+      <h3 style="color:var(--accent)">Order Details</h3>
+      <div id="orderList"></div>
+    </div>
+  </div>
 
-<script>
-const users=[{username:"manager",password:"123456"}];
-const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
-let allOrders=[];
+  <script>
+    const users = [{ username: "manager", password: "123456" }];
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
+    let allOrders = [];
 
-loginForm.onsubmit=e=>{
- e.preventDefault();
- const u=users.find(x=>x.username===username.value&&x.password===password.value);
- if(!u){loginError.classList.remove("hidden");return;}
- loginContainer.style.display="none";
- dashboard.classList.remove("hidden");
- loadData();
-};
+    loginForm.onsubmit = e => {
+      e.preventDefault();
+      const u = users.find(x => x.username === username.value && x.password === password.value);
+      if (!u) { loginError.classList.remove("hidden"); return; }
+      loginContainer.style.display = "none";
+      dashboard.classList.remove("hidden");
+      loadData();
+    };
 
-function formatDateForInput(d){
- if(!d||!d.includes("/"))return"";
- const p=d.split("/");
- return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-}
+    function formatDateForInput(d) {
+      if (!d || !d.includes("/")) return "";
+      const p = d.split("/");
+      return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+    }
 
-function loadData(){
- fetch(sheetURL).then(r=>r.text()).then(csv=>{
-  const rows=Papa.parse(csv,{header:true,skipEmptyLines:true}).data;
-  const map={};
+    function loadData() {
+      fetch(sheetURL).then(r => r.text()).then(csv => {
+        const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+        const map = {};
 
-  rows.forEach(r=>{
-   const id=r["#M Order"];
-   if(!id)return;
+        rows.forEach(r => {
+          const id = r["#M Order"];
+          if (!id) return;
 
-   if(!map[id]){
-     map[id]={orderNo:id,date:formatDateForInput(r["Snapshot_Date"]),wh:{}};
-   }
+          if (!map[id]) {
+            map[id] = { orderNo: id, date: formatDateForInput(r["Snapshot_Date"]), wh: {} };
+          }
 
-   let whName=(r["Warehouse Name"]||"").toLowerCase();
-   const base=whName.replace(/---pack/g,"").replace(/\s*wh/g,"").trim();
-   const distValue=(r["Distribution"]||"").toUpperCase();
-   const distributed=(distValue==="LMD"||distValue==="WAKILNI"||distValue==="EMPLOYEE");
+          let whName = (r["Warehouse Name"] || "").toLowerCase();
+          const base = whName.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
+          const distValue = (r["Distribution"] || "").toUpperCase();
+          const distributed = (distValue === "LMD" || distValue === "WAKILNI" || distValue === "EMPLOYEE");
 
-   if(!map[id].wh[base]){
-     map[id].wh[base]={base,packed:false,distributed};
-   } else {
-     // إذا أكثر من مستودع، ضع distributed واحد فقط
-     map[id].wh[base].distributed = map[id].wh[base].distributed || distributed;
-   }
+          if (!map[id].wh[base]) {
+            map[id].wh[base] = { base, packed: false, distributed };
+          } else {
+            // إذا أكثر من مستودع، ضع distributed واحد فقط
+            map[id].wh[base].distributed = map[id].wh[base].distributed || distributed;
+          }
 
-   if(whName.includes("pack")) map[id].wh[base].packed=true;
-  });
+          if (whName.includes("pack")) map[id].wh[base].packed = true;
+        });
 
-  allOrders=Object.values(map).map(o=>{
-   const w=Object.values(o.wh);
-   const packed=w.filter(x=>x.packed).length;
-   let status="pending";
-   if(packed===w.length)status="completed";
-   else if(packed>0)status="partial";
-   return{...o,status,warehouses:w};
-  });
+        allOrders = Object.values(map).map(o => {
+          const w = Object.values(o.wh);
+          const packed = w.filter(x => x.packed).length;
+          let status = "pending";
+          if (packed === w.length) status = "completed";
+          else if (packed > 0) status = "partial";
+          return { ...o, status, warehouses: w };
+        });
 
-  initDate();
-  updateDashboard();
- });
-}
+        initDate();
+        updateDashboard();
+      });
+    }
 
-function initDate(){
- const d=[...new Set(allOrders.map(o=>o.date))].filter(Boolean).sort();
- if(d.length)dateFilter.value=d[d.length-1];
-}
+    function initDate() {
+      const d = [...new Set(allOrders.map(o => o.date))].filter(Boolean).sort();
+      if (d.length) dateFilter.value = d[d.length - 1];
+    }
 
-function applyFilters(){
- return allOrders.filter(o=>!dateFilter.value||o.date===dateFilter.value);
-}
+    function applyFilters() {
+      return allOrders.filter(o => !dateFilter.value || o.date === dateFilter.value);
+    }
 
-function updateDashboard(){
- const o=applyFilters();
- total.textContent=o.length;
- completed.textContent=o.filter(x=>x.status==="completed").length;
- partial.textContent=o.filter(x=>x.status==="partial").length;
- pending.textContent=o.filter(x=>x.status==="pending").length;
- renderWarehouseBreakdown(o);
- renderWarehouseChart(o);
-}
+    function updateDashboard() {
+      const o = applyFilters();
+      total.textContent = o.length;
+      completed.textContent = o.filter(x => x.status === "completed").length;
+      partial.textContent = o.filter(x => x.status === "partial").length;
+      pending.textContent = o.filter(x => x.status === "pending").length;
+      renderWarehouseBreakdown(o);
+      renderWarehouseChart(o);
+    }
 
-function renderWarehouseBreakdown(orders){
- const m={};
- orders.forEach(o=>{
-  o.warehouses.forEach(w=>{
-   if(!m[w.base])m[w.base]={t:0,c:0,p:0,n:0};
-   m[w.base].t++;
-   if(o.status==="completed") m[w.base].c++;
-   else if(o.status==="partial") m[w.base].p++;
-   else m[w.base].n++;
-  });
- });
+    function renderWarehouseBreakdown(orders) {
+      const m = {};
+      orders.forEach(o => {
+        o.warehouses.forEach(w => {
+          if (!m[w.base]) m[w.base] = { t: 0, c: 0, p: 0, n: 0 };
+          m[w.base].t++;
+          if (o.status === "completed") m[w.base].c++;
+          else if (o.status === "partial") m[w.base].p++;
+          else m[w.base].n++;
+        });
+      });
 
- warehouseBreakdownTable.innerHTML=`
+      warehouseBreakdownTable.innerHTML = `
  <table>
   <thead>
    <tr>
@@ -228,7 +348,7 @@ function renderWarehouseBreakdown(orders){
    </tr>
   </thead>
   <tbody>
-   ${Object.entries(m).map(([k,v])=>`
+   ${Object.entries(m).map(([k, v]) => `
     <tr>
      <td>${k}</td>
      <td><a href="#" onclick="showWarehouseOrders('${k}','total')">${v.t}</a></td>
@@ -240,93 +360,94 @@ function renderWarehouseBreakdown(orders){
   </tbody>
  </table>
  `;
-}
+    }
 
-function showWarehouseOrders(warehouse,type){
- let filtered=applyFilters().filter(o=>o.warehouses.some(w=>w.base===warehouse));
- if(type!=="total") filtered=filtered.filter(o=>o.status===type);
+    function showWarehouseOrders(warehouse, type) {
+      let filtered = applyFilters().filter(o => o.warehouses.some(w => w.base === warehouse));
+      if (type !== "total") filtered = filtered.filter(o => o.status === type);
 
- displayOrders(filtered);
-}
+      displayOrders(filtered);
+    }
 
-function showOrderDetails(type){
- let o=applyFilters();
- if(type!=="total") o=o.filter(x=>x.status===type);
+    function showOrderDetails(type) {
+      let o = applyFilters();
+      if (type !== "total") o = o.filter(x => x.status === type);
 
- displayOrders(o);
-}
+      displayOrders(o);
+    }
 
-function displayOrders(orders){
- const singleWarehouse=orders.filter(x=>x.warehouses.length===1);
- const multiWarehouse=orders.filter(x=>x.warehouses.length>1);
+    function displayOrders(orders) {
+      const singleWarehouse = orders.filter(x => x.warehouses.length === 1);
+      const multiWarehouse = orders.filter(x => x.warehouses.length > 1);
 
- orderList.innerHTML="";
+      orderList.innerHTML = "";
 
- if(singleWarehouse.length){
-  orderList.innerHTML+=`<h4>Single Warehouse Orders</h4>`;
-  singleWarehouse.forEach(x=>{
-   orderList.innerHTML+=`
+      if (singleWarehouse.length) {
+        orderList.innerHTML += `<h4>Single Warehouse Orders</h4>`;
+        singleWarehouse.forEach(x => {
+          orderList.innerHTML += `
    <div class="warehouse-card">
     <b>Order:</b> ${x.orderNo} - ${x.status}<br>
     <ul style="margin-top:6px;padding-left:18px">
-     ${x.warehouses.map(w=>`
-      <li>${w.base} - ${w.packed?'Packed':'Not Packed'} | Distributed: ${w.distributed?'✅':'❌'}</li>
+     ${x.warehouses.map(w => `
+      <li>${w.base} - ${w.packed ? 'Packed' : 'Not Packed'} | Distributed: ${w.distributed ? '✅' : '❌'}</li>
      `).join("")}
     </ul>
    </div>
    `;
-  });
- }
+        });
+      }
 
- if(multiWarehouse.length){
-  orderList.innerHTML+=`<h4>Multi-Warehouse Orders</h4>`;
-  multiWarehouse.forEach(x=>{
-   orderList.innerHTML+=`
+      if (multiWarehouse.length) {
+        orderList.innerHTML += `<h4>Multi-Warehouse Orders</h4>`;
+        multiWarehouse.forEach(x => {
+          orderList.innerHTML += `
    <div class="warehouse-card">
     <b>Order:</b> ${x.orderNo} - ${x.status}<br>
-    <b>Distributed:</b> ${x.warehouses.some(w=>w.distributed)?'✅':'❌'}<br>
+    <b>Distributed:</b> ${x.warehouses.some(w => w.distributed) ? '✅' : '❌'}<br>
     <ul style="margin-top:6px;padding-left:18px">
-     ${x.warehouses.map(w=>`
-      <li>${w.base} - ${w.packed?'Packed':'Not Packed'}</li>
+     ${x.warehouses.map(w => `
+      <li>${w.base} - ${w.packed ? 'Packed' : 'Not Packed'}</li>
      `).join("")}
     </ul>
    </div>
    `;
-  });
- }
+        });
+      }
 
- orderDetails.classList.remove("hidden");
-}
+      orderDetails.classList.remove("hidden");
+    }
 
-function closeOrderDetails(){orderDetails.classList.add("hidden")}
-function signOut(){location.reload()}
+    function closeOrderDetails() { orderDetails.classList.add("hidden") }
+    function signOut() { location.reload() }
 
-function renderWarehouseChart(orders){
- const m={};
- orders.forEach(o=>{
-  o.warehouses.forEach(w=>{
-   if(!m[w.base])m[w.base]={c:0,p:0,n:0};
-   if(o.status==="completed")m[w.base].c++;
-   else if(o.status==="partial")m[w.base].p++;
-   else m[w.base].n++;
-  });
- });
- const labels=Object.keys(m);
- if(window.wChart)wChart.destroy();
- wChart=new Chart(warehouseChart,{
-  type:"bar",
-  data:{
-   labels,
-   datasets:[
-    {label:"Completed",data:labels.map(l=>m[l].c),backgroundColor:"#22c55e"},
-    {label:"Partial",data:labels.map(l=>m[l].p),backgroundColor:"#3b82f6"},
-    {label:"Pending",data:labels.map(l=>m[l].n),backgroundColor:"#f59e0b"}
-   ]
-  },
-  options:{responsive:true,scales:{y:{beginAtZero:true}}}
- });
-}
-</script>
+    function renderWarehouseChart(orders) {
+      const m = {};
+      orders.forEach(o => {
+        o.warehouses.forEach(w => {
+          if (!m[w.base]) m[w.base] = { c: 0, p: 0, n: 0 };
+          if (o.status === "completed") m[w.base].c++;
+          else if (o.status === "partial") m[w.base].p++;
+          else m[w.base].n++;
+        });
+      });
+      const labels = Object.keys(m);
+      if (window.wChart) wChart.destroy();
+      wChart = new Chart(warehouseChart, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Completed", data: labels.map(l => m[l].c), backgroundColor: "#22c55e" },
+            { label: "Partial", data: labels.map(l => m[l].p), backgroundColor: "#3b82f6" },
+            { label: "Pending", data: labels.map(l => m[l].n), backgroundColor: "#f59e0b" }
+          ]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    }
+  </script>
 
 </body>
+
 </html>
