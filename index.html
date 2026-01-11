@@ -217,24 +217,25 @@
                     <div id="total" class="value">0</div>
                 </div>
                 <div class="kpi" onclick="showOrderDetails('completed')">
-                    <div>Completed</div>
+                    <div>Packed</div>
                     <div id="completed" class="value success">0</div>
-                </div>
-                <div class="kpi" onclick="showOrderDetails('pending')">
-                    <div>Pending</div>
-                    <div id="pending" class="value warning">0</div>
                 </div>
                 <div class="kpi" onclick="showOrderDetails('distributed')">
                     <div>Distributed</div>
                     <div id="distributed" class="value success">0</div>
                 </div>
+                <div class="kpi" onclick="showOrderDetails('pending')">
+                    <div>Pending</div>
+                    <div id="pending" class="value warning">0</div>
+                </div>
+
             </div>
 
             <!-- BREAKDOWNS -->
             <div class="warehouse-container">
 
                 <div class="card">
-                    <h3 style="color:var(--accent)">Warehouse Breakdown</h3>
+                    <h3 style="color:var(--accent)">Warehouse overview</h3>
                     <div id="warehouseBreakdownTable"></div>
                 </div>
 
@@ -351,7 +352,7 @@
             });
             warehouseBreakdownTable.innerHTML = `
  <table>
- <tr><th>Warehouse</th><th>Total</th><th>Completed</th><th>Pending</th></tr>
+ <tr><th>Warehouse</th><th>Total</th><th>Completed</th><th>Pending</th><th>distributed</th></tr>
  ${Object.entries(m).map(([k, v]) => `
  <tr>
  <td>${k}</td>
@@ -367,7 +368,7 @@
             const m = orders.filter(o => o.warehouses.length > 1);
             multiWHTable.innerHTML = `
  <table>
- <tr><th>Type</th><th>Orders</th></tr>
+ <tr><th>Type</th><th>Orders</th><th>distributed</th></tr>
  <tr><td>Total Multi-WH</td><td>${m.length}</td></tr>
  <tr><td>Completed</td><td>${m.filter(o => o.status === "completed").length}</td></tr>
  <tr><td>Pending</td><td>${m.filter(o => o.status !== "completed").length}</td></tr>
@@ -379,7 +380,7 @@
             const s = orders.filter(o => o.warehouses.length === 1);
             singleWHTable.innerHTML = `
  <table>
- <tr><th>Type</th><th>Orders</th></tr>
+ <tr><th>Type</th><th>Orders</th><th>distributed</th></tr>
  <tr><td>Total Single-WH</td><td>${s.length}</td></tr>
  <tr><td>Completed</td><td>${s.filter(o => o.status === "completed").length}</td></tr>
  <tr><td>Pending</td><td>${s.filter(o => o.status !== "completed").length}</td></tr>
