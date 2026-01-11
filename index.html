@@ -2,458 +2,420 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <title>Warehouse Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Warehouse Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <style>
-    :root {
-      --bg: #0f172a;
-      --sidebar: #020617;
-      --card: #111827;
-      --accent: #22c55e;
-      --warning: #f59e0b;
-      --partial: #3b82f6;
-      --text: #e5e7eb;
-    }
+    <style>
+        :root {
+            --bg: #0f172a;
+            --sidebar: #020617;
+            --card: #111827;
+            --accent: #22c55e;
+            --warning: #f59e0b;
+            --text: #e5e7eb;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Inter, sans-serif;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Inter, sans-serif;
+        }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-    }
+        body {
+            background: var(--bg);
+            color: var(--text);
+        }
 
-    .hidden {
-      display: none !important
-    }
+        .hidden {
+            display: none !important
+        }
 
-    .app {
-      display: grid;
-      grid-template-columns: 240px 1fr;
-      min-height: 100vh
-    }
+        .app {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh
+        }
 
-    .sidebar {
-      background: var(--sidebar);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px
-    }
+        .sidebar {
+            background: var(--sidebar);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px
+        }
 
-    .sidebar h2 {
-      color: var(--accent)
-    }
+        .sidebar h2 {
+            color: var(--accent)
+        }
 
-    .sidebar a {
-      color: var(--text);
-      text-decoration: none;
-      padding: 10px;
-      border-radius: 8px
-    }
+        .sidebar a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 8px
+        }
 
-    .sidebar a:hover {
-      background: #111827
-    }
-.logo{
-  height:60px;
-  width:180px;
-  mix-blend-mode: multiply;
+        .sidebar a:hover {
+            background: #111827
+        }
 
-}
-    .main {
-      padding: 20px
-    }
+        .main {
+            padding: 20px
+        }
 
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, .35)
-    }
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .35)
+        }
 
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px
-    }
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px
+        }
 
-    .kpi {
-      background: #020617;
-      padding: 18px;
-      border-radius: 14px;
-      text-align: center;
-      cursor: pointer
-    }
+        .kpi {
+            background: #020617;
+            padding: 18px;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer
+        }
 
-    .kpi .value {
-      font-size: 32px;
-      font-weight: 700;
-      margin-top: 6px
-    }
+        .kpi .value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 6px
+        }
 
-    .success {
-      color: var(--accent)
-    }
+        .success {
+            color: var(--accent)
+        }
 
-    .warning {
-      color: var(--warning)
-    }
+        .warning {
+            color: var(--warning)
+        }
 
-    .partial {
-      color: var(--partial)
-    }
+        input,
+        button {
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            background: #020617;
+            color: white
+        }
 
-    input,
-    button {
-      padding: 8px;
-      border-radius: 8px;
-      border: none;
-      background: #020617;
-      color: white
-    }
+        button {
+            cursor: pointer
+        }
 
-    button {
-      cursor: pointer
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px
+        }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px
-    }
+        th,
+        td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center
+        }
 
-    th,
-    td {
-      border: 1px solid #333;
-      padding: 8px;
-      text-align: center
-    }
+        th {
+            background: #111827;
+            color: var(--accent)
+        }
+        .warehouse-container{
 
-    th {
-      background: #111827;
-      color: var(--accent)
-    }
+        }
+        .warehouse-card {
+            background: #020617;
+            padding: 14px;
+            border-radius: 14px;
+            margin-bottom: 12px
+        }
 
-    .warehouse-card {
-      background: #020617;
-      padding: 14px;
-      border-radius: 14px;
-      margin-bottom: 12px
-    }
+        #loginContainer {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
 
-    #loginContainer {
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center
-    }
+        #orderDetails {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999
+        }
 
-    #orderDetails {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999
-    }
+        #orderDetails .card {
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow: auto
+        }
 
-    #orderDetails .card {
-      width: 90%;
-      max-width: 800px;
-      max-height: 85vh;
-      overflow: auto
-    }
-  </style>
+        .warehouse-container {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top:20px
+        }
+
+        .warehouse-container .card {
+            flex: 1
+        }
+    </style>
 </head>
 
 <body>
 
-  <div id="loginContainer">
-    <form id="loginForm" class="card" style="width:320px">
-      <h2 style="text-align:center;color:var(--accent)">Login</h2>
-      <input id="username" placeholder="Username" required style="width:100%;margin:10px 0">
-      <input id="password" type="password" placeholder="Password" required style="width:100%">
-      <button style="margin-top:12px;width:100%;background:var(--accent)">Login</button>
-      <p id="loginError" class="warning hidden">Invalid credentials</p>
-    </form>
-  </div>
-
-  <div id="dashboard" class="hidden app">
-
-    <aside class="sidebar">
-      <h2><i class="fa-solid fa-warehouse"></i> My Holdal</h2>
-      <a href="#">Dashboard</a>
-      <a href="#">Warehouses</a>
-     <a href="#">Distribution</a>
-      <a href="#" onclick="signOut()" style="color:#ef4444">Logout</a>
-    </aside>
-
-    <main class="main">
-
-      <header style="margin-bottom:20px;display:flex;justify-content:space-between">
-        <h3>Warehouse Management</h3>
-        <img class="logo" src="https://lh5.googleusercontent.com/7lBW3j5HqbadbeeiHB2ATG3KI7qtkZ8Hatu3B3cQN0ehCY71tuLnlkTGkpnwH9SLXqjc2UVg5aPvTrclw2Wa-x8MIvHjkcolJ_irVro_E4DE9wnFAaLkbVDgv9MO7UUI7BU6v9a7">
-        <input type="date" id="dateFilter" onchange="updateDashboard()">
-      </header>
-
-      <div class="kpis">
-        <div class="kpi" onclick="showOrderDetails('total')">
-          <div>Total Orders</div>
-          <div id="total" class="value">0</div>
-        </div>
-        <div class="kpi" onclick="showOrderDetails('completed')">
-          <div>Completed</div>
-          <div id="completed" class="value success">0</div>
-        </div>
-        <div class="kpi" onclick="showOrderDetails('partial')">
-          <div>Partial</div>
-          <div id="partial" class="value partial">0</div>
-        </div>
-        <div class="kpi" onclick="showOrderDetails('pending')">
-          <div>Pending</div>
-          <div id="pending" class="value warning">0</div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:20px">
-        <h3 style="color:var(--accent)">Warehouse Breakdown</h3>
-        <div id="warehouseBreakdownTable"></div>
-      </div>
-
-      <div class="card" style="margin-top:20px">
-        <h3 style="color:var(--accent)">Warehouse Chart</h3>
-        <canvas id="warehouseChart"></canvas>
-      </div>
-
-    </main>
-  </div>
-
-  <div id="orderDetails" class="hidden">
-    <div class="card">
-      <button onclick="closeOrderDetails()" style="float:right;background:#ef4444">Close</button>
-      <h3 style="color:var(--accent)">Order Details</h3>
-      <div id="orderList"></div>
+    <!-- LOGIN -->
+    <div id="loginContainer">
+        <form id="loginForm" class="card" style="width:320px">
+            <h2 style="text-align:center;color:var(--accent)">Login</h2>
+            <input id="username" placeholder="Username" required style="width:100%;margin:10px 0">
+            <input id="password" type="password" placeholder="Password" required style="width:100%">
+            <button style="margin-top:12px;width:100%;background:var(--accent)">Login</button>
+            <p id="loginError" class="warning hidden">Invalid
+                credentials</p>
+        </form>
     </div>
-  </div>
 
-  <script>
-    const users = [{ username: "manager", password: "123456" }];
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
-    let allOrders = [];
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="hidden app">
+        <aside class="sidebar">
+            <h2><i class="fa-solid fa-warehouse"></i> <B>MY</B>Holdal</h2>
+            <a href="#">Dashboard</a>
+            <a href="#" onclick="showWarehouses()">Warehouses</a>
+            <a href="#" onclick="signOut()" style="color:#ef4444">Logout</a>
+        </aside>
 
-    loginForm.onsubmit = e => {
-      e.preventDefault();
-      const u = users.find(x => x.username === username.value && x.password === password.value);
-      if (!u) { loginError.classList.remove("hidden"); return; }
-      loginContainer.style.display = "none";
-      dashboard.classList.remove("hidden");
-      loadData();
-    };
+        <main class="main">
+            <header style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+                <h3>Warehouse Management</h3>
+                <input type="date" id="dateFilter" onchange="updateDashboard()">
+            </header>
 
-    function formatDateForInput(d) {
-      if (!d || !d.includes("/")) return "";
-      const p = d.split("/");
-      return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
-    }
+            <!-- KPIs -->
+            <div class="kpis">
+                <div class="kpi" onclick="showOrderDetails('total')">
+                    <div>Total Orders</div>
+                    <div id="total" class="value">0</div>
+                </div>
+                <div class="kpi" onclick="showOrderDetails('completed')">
+                    <div>Completed</div>
+                    <div id="completed" class="value success">0</div>
+                </div>
+                <div class="kpi" onclick="showOrderDetails('pending')">
+                    <div>Pending</div>
+                    <div id="pending" class="value warning">0</div>
+                </div>
+                <div class="kpi" onclick="showOrderDetails('distributed')">
+                    <div>Distributed</div>
+                    <div id="distributed" class="value success">0</div>
+                </div>
+            </div>
 
-    function loadData() {
-      fetch(sheetURL).then(r => r.text()).then(csv => {
-        const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
-        const map = {};
+            <!-- BREAKDOWNS -->
+            <div class="warehouse-container">
 
-        rows.forEach(r => {
-          const id = r["#M Order"];
-          if (!id) return;
+                <div class="card">
+                    <h3 style="color:var(--accent)">Warehouse Breakdown</h3>
+                    <div id="warehouseBreakdownTable"></div>
+                </div>
 
-          if (!map[id]) {
-            map[id] = { orderNo: id, date: formatDateForInput(r["Snapshot_Date"]), wh: {} };
-          }
+                <div class="card">
+                    <h3 style="color:var(--accent)">Multi-Warehouse
+                        Orders</h3>
+                    <div id="multiWHTable"></div>
+                </div>
 
-          let whName = (r["Warehouse Name"] || "").toLowerCase();
-          const base = whName.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
-          const distValue = (r["Distribution"] || "").toUpperCase();
-          const distributed = (distValue === "LMD" || distValue === "WAKILNI" || distValue === "EMPLOYEE");
+                <div class="card">
+                    <h3 style="color:var(--accent)">Single-Warehouse
+                        Orders</h3>
+                    <div id="singleWHTable"></div>
+                </div>
 
-          if (!map[id].wh[base]) {
-            map[id].wh[base] = { base, packed: false, distributed };
-          } else {
-            // إذا أكثر من مستودع، ضع distributed واحد فقط
-            map[id].wh[base].distributed = map[id].wh[base].distributed || distributed;
-          }
+            </div>
+        </main>
+    </div>
 
-          if (whName.includes("pack")) map[id].wh[base].packed = true;
-        });
+    <!-- ORDER DETAILS -->
+    <div id="orderDetails" class="hidden">
+        <div class="card">
+            <button onclick="closeOrderDetails()" style="float:right;background:#ef4444">Close</button>
+            <h3 style="color:var(--accent)" id="orderDetailsTitle">Order
+                Details</h3>
+            <div id="orderList"></div>
+        </div>
+    </div>
 
-        allOrders = Object.values(map).map(o => {
-          const w = Object.values(o.wh);
-          const packed = w.filter(x => x.packed).length;
-          let status = "pending";
-          if (packed === w.length) status = "completed";
-          else if (packed > 0) status = "partial";
-          return { ...o, status, warehouses: w };
-        });
+    <script>
+        const users = [{ username: "manager", password: "123456" }];
+        const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
+        let allOrders = [];
 
-        initDate();
-        updateDashboard();
-      });
-    }
+        loginForm.onsubmit = e => {
+            e.preventDefault();
+            const u = users.find(x => x.username === username.value && x.password === password.value);
+            if (!u) { loginError.classList.remove("hidden"); return; }
+            loginContainer.style.display = "none";
+            dashboard.classList.remove("hidden");
+            loadData();
+        };
 
-    function initDate() {
-      const d = [...new Set(allOrders.map(o => o.date))].filter(Boolean).sort();
-      if (d.length) dateFilter.value = d[d.length - 1];
-    }
+        function formatDateForInput(d) {
+            if (!d || !d.includes("/")) return "";
+            const p = d.split("/");
+            return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+        }
 
-    function applyFilters() {
-      return allOrders.filter(o => !dateFilter.value || o.date === dateFilter.value);
-    }
+        function loadData() {
+            fetch(sheetURL).then(r => r.text()).then(csv => {
+                const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+                const map = {};
 
-    function updateDashboard() {
-      const o = applyFilters();
-      total.textContent = o.length;
-      completed.textContent = o.filter(x => x.status === "completed").length;
-      partial.textContent = o.filter(x => x.status === "partial").length;
-      pending.textContent = o.filter(x => x.status === "pending").length;
-      renderWarehouseBreakdown(o);
-      renderWarehouseChart(o);
-    }
+                rows.forEach(r => {
+                    const id = r["#M Order"];
+                    if (!id) return;
+                    if (!map[id]) map[id] = { orderNo: id, date: formatDateForInput(r["Snapshot_Date"]), wh: {} };
 
-    function renderWarehouseBreakdown(orders) {
-      const m = {};
-      orders.forEach(o => {
-        o.warehouses.forEach(w => {
-          if (!m[w.base]) m[w.base] = { t: 0, c: 0, p: 0, n: 0 };
-          m[w.base].t++;
-          if (o.status === "completed") m[w.base].c++;
-          else if (o.status === "partial") m[w.base].p++;
-          else m[w.base].n++;
-        });
-      });
+                    let wh = (r["Warehouse Name"] || "").toLowerCase();
+                    let base = wh.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
 
-      warehouseBreakdownTable.innerHTML = `
+                    if (!map[id].wh[base]) map[id].wh[base] = { base, packed: false, distributed: false };
+                    if (wh.includes("pack")) map[id].wh[base].packed = true;
+
+                    const d = (r["Distribution"] || "").toUpperCase();
+                    if (["LMD", "WAKILNI", "EMPLOYEE"].includes(d)) map[id].wh[base].distributed = true;
+                });
+
+                allOrders = Object.values(map).map(o => {
+                    const w = Object.values(o.wh);
+                    const packed = w.filter(x => x.packed).length;
+                    let status = "pending";
+                    if (packed === w.length) status = "completed";
+                    else if (packed > 0) status = "partial";
+                    return { ...o, status, warehouses: w };
+                });
+
+                initDate();
+                updateDashboard();
+            });
+        }
+
+        function initDate() {
+            const d = [...new Set(allOrders.map(o => o.date))].filter(Boolean).sort();
+            if (d.length) dateFilter.value = d[d.length - 1];
+        }
+
+        function applyFilters() {
+            return allOrders.filter(o => !dateFilter.value || o.date === dateFilter.value);
+        }
+
+        function updateDashboard() {
+            const o = applyFilters();
+            total.textContent = o.length;
+            completed.textContent = o.filter(x => x.status === "completed").length;
+            pending.textContent = o.filter(x => x.status !== "completed").length;
+            distributed.textContent = o.filter(x => x.warehouses.some(w => w.distributed)).length;
+
+            renderWarehouseBreakdown(o);
+            renderMultiWHOrders(o);
+            renderSingleWHOrders(o);
+        }
+
+        /* Warehouse Breakdown */
+        function renderWarehouseBreakdown(orders) {
+            const m = {};
+            orders.forEach(o => {
+                o.warehouses.forEach(w => {
+                    if (!m[w.base]) m[w.base] = { t: 0, c: 0, p: 0 };
+                    m[w.base].t++;
+                    w.packed ? m[w.base].c++ : m[w.base].p++;
+                });
+            });
+            warehouseBreakdownTable.innerHTML = `
  <table>
-  <thead>
-   <tr>
-    <th>Warehouse</th>
-    <th>Total</th>
-    <th>Completed</th>
-    <th>Partial</th>
-    <th>Pending</th>
-   </tr>
-  </thead>
-  <tbody>
-   ${Object.entries(m).map(([k, v]) => `
-    <tr>
-     <td>${k}</td>
-     <td><a href="#" onclick="showWarehouseOrders('${k}','total')">${v.t}</a></td>
-     <td><a href="#" onclick="showWarehouseOrders('${k}','completed')">${v.c}</a></td>
-     <td><a href="#" onclick="showWarehouseOrders('${k}','partial')">${v.p}</a></td>
-     <td><a href="#" onclick="showWarehouseOrders('${k}','pending')">${v.n}</a></td>
-    </tr>
-   `).join("")}
-  </tbody>
- </table>
- `;
-    }
+ <tr><th>Warehouse</th><th>Total</th><th>Completed</th><th>Pending</th></tr>
+ ${Object.entries(m).map(([k, v]) => `
+ <tr>
+ <td>${k}</td>
+ <td><a href="#" onclick="showWarehouseOrders('${k}','total')">${v.t}</a></td>
+ <td><a href="#" onclick="showWarehouseOrders('${k}','completed')">${v.c}</a></td>
+ <td><a href="#" onclick="showWarehouseOrders('${k}','pending')">${v.p}</a></td>
+ </tr>`).join("")}
+ </table>`;
+        }
 
-    function showWarehouseOrders(warehouse, type) {
-      let filtered = applyFilters().filter(o => o.warehouses.some(w => w.base === warehouse));
-      if (type !== "total") filtered = filtered.filter(o => o.status === type);
+        /* Multi WH */
+        function renderMultiWHOrders(orders) {
+            const m = orders.filter(o => o.warehouses.length > 1);
+            multiWHTable.innerHTML = `
+ <table>
+ <tr><th>Type</th><th>Orders</th></tr>
+ <tr><td>Total Multi-WH</td><td>${m.length}</td></tr>
+ <tr><td>Completed</td><td>${m.filter(o => o.status === "completed").length}</td></tr>
+ <tr><td>Pending</td><td>${m.filter(o => o.status !== "completed").length}</td></tr>
+ </table>`;
+        }
 
-      displayOrders(filtered);
-    }
+        /* Single WH Table */
+        function renderSingleWHOrders(orders) {
+            const s = orders.filter(o => o.warehouses.length === 1);
+            singleWHTable.innerHTML = `
+ <table>
+ <tr><th>Type</th><th>Orders</th></tr>
+ <tr><td>Total Single-WH</td><td>${s.length}</td></tr>
+ <tr><td>Completed</td><td>${s.filter(o => o.status === "completed").length}</td></tr>
+ <tr><td>Pending</td><td>${s.filter(o => o.status !== "completed").length}</td></tr>
+ </table>`;
+        }
 
-    function showOrderDetails(type) {
-      let o = applyFilters();
-      if (type !== "total") o = o.filter(x => x.status === type);
+        /* ORDER DETAILS */
+        function showOrderDetails(t) {
+            let o = applyFilters();
+            if (t === "pending") o = o.filter(x => x.status !== "completed");
+            if (t === "completed") o = o.filter(x => x.status === "completed");
+            if (t === "distributed") o = o.filter(x => x.warehouses.some(w => w.distributed));
+            displayOrders(o);
+        }
 
-      displayOrders(o);
-    }
+        function displayOrders(o, w = null) {
+            orderList.innerHTML = "";
+            orderDetailsTitle.textContent = w ? `Order Details - ${w}` : "Order Details";
+            o.forEach(x => {
+                orderList.innerHTML += `
+  <div class="warehouse-card">
+   <b>Order:</b> ${x.orderNo} - ${x.status}
+   <ul>${x.warehouses.map(w => `<li>${w.base} - ${w.packed ? "Packed" : "Not Packed"}</li>`).join("")}</ul>
+  </div>`;
+            });
+            orderDetails.classList.remove("hidden");
+        }
 
-    function displayOrders(orders) {
-      const singleWarehouse = orders.filter(x => x.warehouses.length === 1);
-      const multiWarehouse = orders.filter(x => x.warehouses.length > 1);
+        function closeOrderDetails() { orderDetails.classList.add("hidden") }
+        function signOut() { location.reload() }
 
-      orderList.innerHTML = "";
-
-      if (singleWarehouse.length) {
-        orderList.innerHTML += `<h4>Single Warehouse Orders</h4>`;
-        singleWarehouse.forEach(x => {
-          orderList.innerHTML += `
-   <div class="warehouse-card">
-    <b>Order:</b> ${x.orderNo} - ${x.status}<br>
-    <ul style="margin-top:6px;padding-left:18px">
-     ${x.warehouses.map(w => `
-      <li>${w.base} - ${w.packed ? 'Packed' : 'Not Packed'} | Distributed: ${w.distributed ? '✅' : '❌'}</li>
-     `).join("")}
-    </ul>
-   </div>
-   `;
-        });
-      }
-
-      if (multiWarehouse.length) {
-        orderList.innerHTML += `<h4>Multi-Warehouse Orders</h4>`;
-        multiWarehouse.forEach(x => {
-          orderList.innerHTML += `
-   <div class="warehouse-card">
-    <b>Order:</b> ${x.orderNo} - ${x.status}<br>
-    <b>Distributed:</b> ${x.warehouses.some(w => w.distributed) ? '✅' : '❌'}<br>
-    <ul style="margin-top:6px;padding-left:18px">
-     ${x.warehouses.map(w => `
-      <li>${w.base} - ${w.packed ? 'Packed' : 'Not Packed'}</li>
-     `).join("")}
-    </ul>
-   </div>
-   `;
-        });
-      }
-
-      orderDetails.classList.remove("hidden");
-    }
-
-    function closeOrderDetails() { orderDetails.classList.add("hidden") }
-    function signOut() { location.reload() }
-
-    function renderWarehouseChart(orders) {
-      const m = {};
-      orders.forEach(o => {
-        o.warehouses.forEach(w => {
-          if (!m[w.base]) m[w.base] = { c: 0, p: 0, n: 0 };
-          if (o.status === "completed") m[w.base].c++;
-          else if (o.status === "partial") m[w.base].p++;
-          else m[w.base].n++;
-        });
-      });
-      const labels = Object.keys(m);
-      if (window.wChart) wChart.destroy();
-      wChart = new Chart(warehouseChart, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [
-            { label: "Completed", data: labels.map(l => m[l].c), backgroundColor: "#22c55e" },
-            { label: "Partial", data: labels.map(l => m[l].p), backgroundColor: "#3b82f6" },
-            { label: "Pending", data: labels.map(l => m[l].n), backgroundColor: "#f59e0b" }
-          ]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
-      });
-    }
-  </script>
-
+        /* NAVIGATION TO WAREHOUSES PAGE */
+        function showWarehouses() {
+            window.location.href = "warehouses.html";
+        }
+    </script>
 </body>
 
 </html>
