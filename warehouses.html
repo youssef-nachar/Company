@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Warehouses - My Holdal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+
+<style>
+:root{
+ --bg:#0f172a;
+ --sidebar:#020617;
+ --card:#111827;
+ --accent:#22c55e;
+ --warning:#f59e0b;
+ --partial:#3b82f6;
+ --text:#e5e7eb;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,sans-serif;}
+body{background:var(--bg);color:var(--text);}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:var(--sidebar);padding:20px;display:flex;flex-direction:column;gap:20px}
+.sidebar h2{color:var(--accent)}
+.sidebar a{color:var(--text);text-decoration:none;padding:10px;border-radius:8px}
+.sidebar a:hover{background:#111827}
+.main{padding:20px}
+.card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid #333;padding:8px;text-align:center}
+th{background:#111827;color:var(--accent)}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <h2><i class="fa-solid fa-warehouse"></i> My Holdal</h2>
+    <a href="index.html">Dashboard</a>
+    <a href="#" onclick="signOut()" style="color:#ef4444">Logout</a>
+  </aside>
+
+  <main class="main">
+    <h3 style="margin-bottom:20px;color:var(--accent)">All Warehouses</h3>
+
+    <div class="card">
+      <h4 style="color:var(--accent)">Warehouse List</h4>
+      <div id="warehouseList"></div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent)">Warehouse Charts</h4>
+      <canvas id="warehousesChart"></canvas>
+      <canvas id="singleWHChart" style="margin-top:20px;"></canvas>
+      <canvas id="multiWHChart" style="margin-top:20px;"></canvas>
+    </div>
+  </main>
+</div>
+
+<script>
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
+let allOrders=[];
+
+window.onload = function(){
+  fetch(sheetURL).then(r=>r.text()).then(csv=>{
+    const rows=Papa.parse(csv,{header:true,skipEmptyLines:true}).data;
+    const map={};
+
+    rows.forEach(r=>{
+      const id=r["#M Order"];
+      if(!id)return;
+      if(!map[id])map[id]={orderNo:id,date:r["Snapshot_Date"],wh:{}};
+
+      let wh=(r["Warehouse Name"]||"").toLowerCase();
+      let base=wh.replace(/---pack/g,"").replace(/\s*wh/g,"").trim();
+
+      if(!map[id].wh[base])map[id].wh[base]={base,packed:false,distributed:false};
+      if(wh.includes("pack"))map[id].wh[base].packed=true;
+
+      const d=(r["Distribution"]||"").toUpperCase();
+      if(["LMD","WAKILNI","EMPLOYEE"].includes(d))map[id].wh[base].distributed=true;
+    });
+
+    allOrders=Object.values(map).map(o=>{
+      const w=Object.values(o.wh);
+      const packed=w.filter(x=>x.packed).length;
+      let status="pending";
+      if(packed===w.length)status="completed";
+      else if(packed>0)status="partial";
+      return{...o,status,warehouses:w};
+    });
+
+    renderWarehouseList();
+    renderWarehousesChart();
+    renderSingleWHChart();
+    renderMultiWHChart();
+  });
+}
+
+/* RENDER LIST */
+function renderWarehouseList() {
+  const m = {};
+  allOrders.forEach(o => {
+    o.warehouses.forEach(w => {
+      if (!m[w.base]) m[w.base] = { total: 0, completed: 0, pending: 0 };
+      m[w.base].total++;
+      w.packed ? m[w.base].completed++ : m[w.base].pending++;
+    });
+  });
+
+  warehouseList.innerHTML = `
+    <table>
+      <tr><th>Warehouse</th><th>Total Orders</th><th>Completed</th><th>Pending</th></tr>
+      ${Object.entries(m).map(([name, val]) => `
+        <tr>
+          <td>${name}</td>
+          <td>${val.total}</td>
+          <td>${val.completed}</td>
+          <td>${val.pending}</td>
+        </tr>
+      `).join("")}
+    </table>`;
+}
+
+/* CHARTS */
+function renderWarehousesChart() {
+  const m = {};
+  allOrders.forEach(o => {
+    o.warehouses.forEach(w => {
+      if (!m[w.base]) m[w.base] = { completed: 0, pending: 0 };
+      o.status === "completed" ? m[w.base].completed++ : m[w.base].pending++;
+    });
+  });
+
+  if (window.warehousesChartInstance) warehousesChartInstance.destroy();
+
+  warehousesChartInstance = new Chart(warehousesChart, {
+    type: "bar",
+    data: {
+      labels: Object.keys(m),
+      datasets: [
+        { label: "Completed", data: Object.values(m).map(x=>x.completed), backgroundColor:"#22c55e" },
+        { label: "Pending", data: Object.values(m).map(x=>x.pending), backgroundColor:"#f59e0b" }
+      ]
+    },
+    options: { responsive:true, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+function renderSingleWHChart() {
+  const s = allOrders.filter(o => o.warehouses.length === 1);
+  const data = [s.filter(o => o.status==="completed").length, s.filter(o=>o.status!=="completed").length];
+  if(window.singleChartInstance) singleChartInstance.destroy();
+  singleChartInstance = new Chart(singleWHChart,{
+    type:"doughnut",
+    data:{ labels:["Completed","Pending"], datasets:[{data:data,backgroundColor:["#22c55e","#f59e0b"]}] }
+  });
+}
+
+function renderMultiWHChart() {
+  const m = allOrders.filter(o => o.warehouses.length > 1);
+  const data = [m.filter(o => o.status==="completed").length, m.filter(o=>o.status!=="completed").length];
+  if(window.multiChartInstance) multiChartInstance.destroy();
+  multiChartInstance = new Chart(multiWHChart,{
+    type:"doughnut",
+    data:{ labels:["Completed","Pending"], datasets:[{data:data,backgroundColor:["#3b82f6","#ef4444"]}] }
+  });
+}
+
+/* SIGN OUT */
+function signOut(){location.href="index.html";}
+</script>
+</body>
+</html>
