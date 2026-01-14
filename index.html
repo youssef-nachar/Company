@@ -466,7 +466,7 @@
   <div class="warehouse-card">
    <b>Order:</b> ${x.orderNo} - ${x.status} - ${distributorText}
    <ul>${x.warehouses.map(w => `
-    <li>${w.base} - ${w.packed ? "Packed" : "Not Packed"}</li>
+    <li>${w.base} - ${w.packed ? "In-packing" : "Pending"}</li>
    `).join("")}</ul>
   </div>`;
             });
