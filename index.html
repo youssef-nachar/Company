@@ -179,6 +179,10 @@
         .warehouse-container .card {
             flex: 1
         }
+        a{
+            color:white;
+            text-decoration:none
+        }
     </style>
 </head>
 
@@ -214,7 +218,7 @@
                     <div id="total" class="value">0</div>
                 </div>
                 <div class="kpi" onclick="showOrderDetails('completed')">
-                    <div>Inpacking</div>
+                    <div>In-Packing</div>
                     <div id="completed" class="value success">0</div>
                 </div>
                 <div class="kpi" onclick="showOrderDetails('pending')">
@@ -369,7 +373,7 @@
  <tr>
   <th>Warehouse</th>
   <th>Total</th>
-  <th>InPackin</th>
+  <th>In-Packing</th>
   <th>Pending</th>
   <th>Distributed</th>
  </tr>
@@ -402,7 +406,7 @@
  <table>
  <tr><th>Type</th><th>Orders</th></tr>
  <tr><td>Total Multi-WH</td><td><a href="#" onclick="showMultiWHOrders('total')">${m.length}</a></td></tr>
- <tr><td>Inpacking</td><td><a href="#" onclick="showMultiWHOrders('completed')">${m.filter(o => o.status === "completed").length}</a></td></tr>
+ <tr><td>In-Packing</td><td><a href="#" onclick="showMultiWHOrders('completed')">${m.filter(o => o.status === "completed").length}</a></td></tr>
  <tr><td>Pending</td><td><a href="#" onclick="showMultiWHOrders('pending')">${m.filter(o => o.status !== "completed").length}</a></td></tr>
  <tr><td>Distributed</td><td><a href="#" onclick="showMultiWHOrders('distributed')">${m.filter(o => o.distributor).length}</a></td></tr>
  </table>`;
@@ -414,7 +418,7 @@
  <table>
  <tr><th>Type</th><th>Orders</th></tr>
  <tr><td>Total Single-WH</td><td><a href="#" onclick="showSingleWHOrders('total')">${s.length}</a></td></tr>
- <tr><td>Inpacking</td><td><a href="#" onclick="showSingleWHOrders('completed')">${s.filter(o => o.status === "completed").length}</a></td></tr>
+ <tr><td>In-packing</td><td><a href="#" onclick="showSingleWHOrders('completed')">${s.filter(o => o.status === "completed").length}</a></td></tr>
  <tr><td>Pending</td><td><a href="#" onclick="showSingleWHOrders('pending')">${s.filter(o => o.status !== "completed").length}</a></td></tr>
  <tr><td>Distributed</td><td><a href="#" onclick="showSingleWHOrders('distributed')">${s.filter(o => o.distributor).length}</a></td></tr>
  </table>`;
