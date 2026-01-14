@@ -264,125 +264,135 @@
         </div>
     </div>
 
-    <script>
-        const users = [{ username: "manager", password: "123456" }];
-        const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
-        let allOrders = [];
-        let lastDisplayedOrders = [];
+  <script>
+const users = [{ username: "manager", password: "123456" }];
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
+let allOrders = [];
+let lastDisplayedOrders = [];
 
-        // LOGIN
-        loginForm.onsubmit = e => {
-            e.preventDefault();
-            const u = users.find(x => x.username === username.value && x.password === password.value);
-            if (!u) { loginError.classList.remove("hidden"); return; }
-            loginContainer.style.display = "none";
-            dashboard.classList.remove("hidden");
-            loadData();
-        };
+// LOGIN
+loginForm.onsubmit = e => {
+    e.preventDefault();
+    const u = users.find(x => x.username === username.value && x.password === password.value);
+    if (!u) { loginError.classList.remove("hidden"); return; }
+    loginContainer.style.display = "none";
+    dashboard.classList.remove("hidden");
+    loadData();
+};
 
-        // FORMAT DATE
-        function formatDateForInput(d) {
-            if (!d || !d.includes("/")) return "";
-            const p = d.split("/");
-            return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
-        }
+// FORMAT DATE
+function formatDateForInput(d) {
+    if (!d || !d.includes("/")) return "";
+    const p = d.split("/");
+    return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+}
 
-        // LOAD DATA FROM GOOGLE SHEET
-        function loadData() {
-            fetch(sheetURL).then(r => r.text()).then(csv => {
-                const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
-                const map = {};
+// LOAD DATA
+function loadData() {
+    fetch(sheetURL).then(r => r.text()).then(csv => {
+        const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+        const map = {};
 
-                rows.forEach(r => {
-                    const id = r["#M Order"];
-                    if (!id) return;
+        rows.forEach(r => {
+            const id = r["#M Order"];
+            if (!id) return;
 
-                    if (!map[id]) map[id] = { orderNo: id, date: formatDateForInput(r["Snapshot_Date"]), wh: {} };
+            if (!map[id]) map[id] = { orderNo: id, date: formatDateForInput(r["Snapshot_Date"]), wh: {} };
 
-                    let wh = (r["Warehouse Name"] || "").toLowerCase();
-                    let base = wh.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
+            let wh = (r["Warehouse Name"] || "").toLowerCase();
+            let base = wh.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
 
-                    if (!map[id].wh[base]) map[id].wh[base] = { base, packed: false, distributed: false, distributor: null };
-                    if (wh.includes("pack")) map[id].wh[base].packed = true;
+            if (!map[id].wh[base]) map[id].wh[base] = { base, packed: false, distributed: false, distributor: null };
+            if (wh.includes("pack")) map[id].wh[base].packed = true;
 
-                    const d = (r["Distribution"] || "").toUpperCase();
-                    if (["LMD", "WAKILNI", "EMPLOYEE"].includes(d)) {
-                        map[id].wh[base].distributed = true;
-                        map[id].wh[base].distributor = d;
-                    }
-                });
+            const d = (r["Distribution"] || "").toUpperCase();
+            if (["LMD","WAKILNI","EMPLOYEE"].includes(d)) {
+                map[id].wh[base].distributed = true;
+                map[id].wh[base].distributor = d;
+            }
+        });
 
-                allOrders = Object.values(map).map(o => {
-                    const warehouses = Object.values(o.wh);
+        allOrders = Object.values(map).map(o => {
+            const warehouses = Object.values(o.wh);
+            const packedCount = warehouses.filter(w => w.packed).length;
+            const isDistributed = warehouses.some(w => w.distributed);
 
-                    const packedCount = warehouses.filter(w => w.packed).length;
-                    const isDistributed = warehouses.some(w => w.distributed);
+            let status = "pending";
+            if (isDistributed) status = "distributed";
+            else if (packedCount === warehouses.length) status = "completed";
+            else if (packedCount > 0) status = "partial";
 
-                    let status = "pending";
-                    if (isDistributed) status = "distributed";
-                    else if (packedCount === warehouses.length) status = "completed";
-                    else if (packedCount > 0) status = "partial";
+            const distWH = warehouses.find(w => w.distributed);
+            const distributor = distWH ? distWH.distributor : null;
+            warehouses.forEach(w => w.distributed = false);
+            if (distWH) distWH.distributed = true;
 
-                    const distWH = warehouses.find(w => w.distributed);
-                    const distributor = distWH ? distWH.distributor : null;
+            return { ...o, status, warehouses, warehouseCount: warehouses.length, distributor };
+        });
 
-                    warehouses.forEach(w => w.distributed = false);
-                    if (distWH) distWH.distributed = true;
+        initDate();
+        updateDashboard();
+    });
+}
 
-                    return { ...o, status, warehouses, warehouseCount: warehouses.length, distributor };
-                });
+// INIT DATE FILTER
+function initDate() {
+    const d = [...new Set(allOrders.map(o=>o.date))].filter(Boolean).sort();
+    if(d.length) dateFilter.value = d[d.length-1];
+}
 
-                initDate();
-                updateDashboard();
-            });
-        }
+// APPLY DATE FILTER
+function applyFilters() {
+    return allOrders.filter(o => !dateFilter.value || o.date === dateFilter.value);
+}
 
-        // INIT DATE FILTER
-        function initDate() {
-            const d = [...new Set(allOrders.map(o => o.date))].filter(Boolean).sort();
-            if (d.length) dateFilter.value = d[d.length - 1];
-        }
+// UPDATE DASHBOARD KPIS
+function updateDashboard() {
+    const o = applyFilters();
+    total.textContent = o.length;
+    completed.textContent = o.filter(x => x.status==="completed").length;
 
-        // APPLY DATE FILTER
-        function applyFilters() {
-            return allOrders.filter(o => !dateFilter.value || o.date === dateFilter.value);
-        }
+    // Pending KPI only counts non-distributed pending/partial orders
+    pending.textContent = o.filter(x=>(x.status==="pending"||x.status==="partial") && !x.distributor).length;
 
-        // UPDATE DASHBOARD KPIS
-        function updateDashboard() {
-            const o = applyFilters();
+    distributed.textContent = o.filter(x=>x.status==="distributed").length;
 
-            total.textContent = o.length;
-            completed.textContent = o.filter(x => x.status === "completed").length;
-            pending.textContent = o.filter(x => x.status === "pending" || x.status === "partial").length;
-            distributed.textContent = o.filter(x => x.status === "distributed").length;
+    renderWarehouseBreakdown(o);
+    renderMultiWHOrders(o);
+    renderSingleWHOrders(o);
+}
 
-            renderWarehouseBreakdown(o);
-            renderMultiWHOrders(o);
-            renderSingleWHOrders(o);
-        }
+// WAREHOUSE BREAKDOWN
+function renderWarehouseBreakdown(orders) {
+    const m = {};
+    let grandTotal = { t: 0, c: 0, p: 0, d: 0 }; // Total counters
 
-        // WAREHOUSE BREAKDOWN TABLE WITH CLICKABLE NUMBERS
-        function renderWarehouseBreakdown(orders) {
-            const m = {};
-            orders.forEach(o => {
-                o.warehouses.forEach(w => {
-                    if (!m[w.base]) m[w.base] = { t: 0, c: 0, p: 0, d: 0 };
-                    m[w.base].t++;
-                    if (o.status === "distributed") m[w.base].d++;
-                    else if (w.packed) m[w.base].c++;
-                    else m[w.base].p++;
-                });
-            });
+    orders.forEach(o => {
+        o.warehouses.forEach(w => {
+            if (!m[w.base]) m[w.base] = { t: 0, c: 0, p: 0, d: 0 };
 
-            warehouseBreakdownTable.innerHTML = `
+            // Increment totals per warehouse
+            m[w.base].t++;
+            if (o.status === "distributed") m[w.base].d++;
+            else if (!o.distributor && w.packed) m[w.base].c++;
+            else if (!o.distributor && !w.packed) m[w.base].p++;
+
+            // Increment grand totals
+            grandTotal.t++;
+            if (o.status === "distributed") grandTotal.d++;
+            else if (!o.distributor && w.packed) grandTotal.c++;
+            else if (!o.distributor && !w.packed) grandTotal.p++;
+        });
+    });
+
+    warehouseBreakdownTable.innerHTML = `
 <table>
 <tr>
  <th>Warehouse</th>
  <th>Total</th>
  <th>In-Packing</th>
  <th>Pending</th>
- <th>Distributed</th>
+ 
 </tr>
 ${Object.entries(m).map(([k, v]) => `
 <tr>
@@ -390,138 +400,117 @@ ${Object.entries(m).map(([k, v]) => `
  <td><a href="#" onclick="showWarehouseOrders('${k}','total')">${v.t}</a></td>
  <td><a href="#" onclick="showWarehouseOrders('${k}','completed')">${v.c}</a></td>
  <td><a href="#" onclick="showWarehouseOrders('${k}','pending')">${v.p}</a></td>
- <td><a href="#" onclick="showWarehouseOrders('${k}','distributed')">${v.d}</a></td>
 </tr>`).join("")}
+<tr style="font-weight:bold;background:#020617;color:#22c55e">
+ <td>TOTAL</td>
+ <td>${grandTotal.t}</td>
+ <td>${grandTotal.c}</td>
+ <td>${grandTotal.p}</td>
+
+</tr>
 </table>`;
-        }
+}
 
-        // MULTI-WAREHOUSE ORDERS TABLE
-        function renderMultiWHOrders(orders) {
-            const m = orders.filter(x => x.warehouseCount > 1);
 
-            multiWHTable.innerHTML = `
+// MULTI-WAREHOUSE ORDERS
+function renderMultiWHOrders(orders){
+    const m = orders.filter(x=>x.warehouseCount>1);
+    multiWHTable.innerHTML=`
 <table>
 <tr><th>Type</th><th>Orders</th></tr>
-<tr>
- <td>Total</td>
- <td><a href="#" onclick="showMultiWHOrders('total')">${m.length}</a></td>
-</tr>
-<tr>
- <td>In-Packing</td>
- <td><a href="#" onclick="showMultiWHOrders('completed')">${m.filter(x => x.status === "completed").length}</a></td>
-</tr>
-<tr>
- <td>Pending</td>
- <td><a href="#" onclick="showMultiWHOrders('pending')">${m.filter(x => x.status === "pending" || x.status === "partial").length}</a></td>
-</tr>
-<tr>
- <td>Distributed</td>
- <td><a href="#" onclick="showMultiWHOrders('distributed')">${m.filter(x => x.status === "distributed").length}</a></td>
-</tr>
+<tr><td>Total</td><td><a href="#" onclick="showMultiWHOrders('total')">${m.length}</a></td></tr>
+<tr><td>In-Packing</td><td><a href="#" onclick="showMultiWHOrders('completed')">${m.filter(x=>x.status==="completed").length}</a></td></tr>
+<tr><td>Pending / partial </td><td><a href="#" onclick="showMultiWHOrders('pending')">${m.filter(x=>(x.status==="pending"||x.status==="partial")&&!x.distributor).length}</a></td></tr>
+<tr><td>Distributed</td><td><a href="#" onclick="showMultiWHOrders('distributed')">${m.filter(x=>x.status==="distributed").length}</a></td></tr>
 </table>`;
-        }
+}
 
-        // SINGLE-WAREHOUSE ORDERS TABLE
-        function renderSingleWHOrders(orders) {
-            const s = orders.filter(x => x.warehouseCount === 1);
-
-            singleWHTable.innerHTML = `
+// SINGLE-WAREHOUSE ORDERS
+function renderSingleWHOrders(orders){
+    const s = orders.filter(x=>x.warehouseCount===1);
+    singleWHTable.innerHTML=`
 <table>
 <tr><th>Type</th><th>Orders</th></tr>
-<tr>
- <td>Total</td>
- <td><a href="#" onclick="showSingleWHOrders('total')">${s.length}</a></td>
-</tr>
-<tr>
- <td>In-Packing</td>
- <td><a href="#" onclick="showSingleWHOrders('completed')">${s.filter(x => x.status === "completed").length}</a></td>
-</tr>
-<tr>
- <td>Pending</td>
- <td><a href="#" onclick="showSingleWHOrders('pending')">${s.filter(x => x.status === "pending" || x.status === "partial").length}</a></td>
-</tr>
-<tr>
- <td>Distributed</td>
- <td><a href="#" onclick="showSingleWHOrders('distributed')">${s.filter(x => x.status === "distributed").length}</a></td>
-</tr>
+<tr><td>Total</td><td><a href="#" onclick="showSingleWHOrders('total')">${s.length}</a></td></tr>
+<tr><td>In-Packing</td><td><a href="#" onclick="showSingleWHOrders('completed')">${s.filter(x=>x.status==="completed").length}</a></td></tr>
+<tr><td>Pending</td><td><a href="#" onclick="showSingleWHOrders('pending')">${s.filter(x=>(x.status==="pending"||x.status==="partial")&&!x.distributor).length}</a></td></tr>
+<tr><td>Distributed</td><td><a href="#" onclick="showSingleWHOrders('distributed')">${s.filter(x=>x.status==="distributed").length}</a></td></tr>
 </table>`;
-        }
+}
 
-        // SHOW ORDER DETAILS
-        function showOrderDetails(type) {
-            let o = applyFilters();
-            if (type === "completed") o = o.filter(x => x.status === "completed");
-            if (type === "pending") o = o.filter(x => x.status === "pending" || x.status === "partial");
-            if (type === "distributed") o = o.filter(x => x.status === "distributed");
-            displayOrders(o);
-        }
+// SHOW ORDER DETAILS
+function showOrderDetails(type){
+    let o = applyFilters();
+    if(type==="completed") o=o.filter(x=>x.status==="completed");
+    if(type==="pending") o=o.filter(x=>(x.status==="pending"||x.status==="partial")&&!x.distributor);
+    if(type==="distributed") o=o.filter(x=>x.status==="distributed");
+    displayOrders(o);
+}
 
-        // SHOW WAREHOUSE ORDERS
-        function showWarehouseOrders(warehouse, type) {
-            let o = applyFilters().filter(order => order.warehouses.some(w => w.base === warehouse));
-            if (type === "completed") o = o.filter(x => x.status === "completed");
-            if (type === "pending") o = o.filter(x => x.status === "pending" || x.status === "partial");
-            if (type === "distributed") o = o.filter(x => x.status === "distributed");
-            displayOrders(o, `Warehouse: ${warehouse}`);
-        }
+// SHOW WAREHOUSE ORDERS
+function showWarehouseOrders(warehouse,type){
+    let o=applyFilters().filter(order=>order.warehouses.some(w=>w.base===warehouse));
+    if(type==="completed") o=o.filter(x=>x.status==="completed");
+    if(type==="pending") o=o.filter(x=>(x.status==="pending"||x.status==="partial")&&!x.distributor);
+    if(type==="distributed") o=o.filter(x=>x.status==="distributed");
+    displayOrders(o,`Warehouse: ${warehouse}`);
+}
 
-        // SHOW MULTI/SINGLE-WAREHOUSE ORDERS
-        function showMultiWHOrders(type) {
-            let o = applyFilters().filter(x => x.warehouseCount > 1);
-            if (type === "completed") o = o.filter(x => x.status === "completed");
-            if (type === "pending") o = o.filter(x => x.status === "pending" || x.status === "partial");
-            if (type === "distributed") o = o.filter(x => x.status === "distributed");
-            displayOrders(o, "Multi-Warehouse Orders");
-        }
+// SHOW MULTI/SINGLE-WAREHOUSE ORDERS
+function showMultiWHOrders(type){
+    let o=applyFilters().filter(x=>x.warehouseCount>1);
+    if(type==="completed") o=o.filter(x=>x.status==="completed");
+    if(type==="pending") o=o.filter(x=>(x.status==="pending"||x.status==="partial")&&!x.distributor);
+    if(type==="distributed") o=o.filter(x=>x.status==="distributed");
+    displayOrders(o,"Multi-Warehouse Orders");
+}
 
-        function showSingleWHOrders(type) {
-            let o = applyFilters().filter(x => x.warehouseCount === 1);
-            if (type === "completed") o = o.filter(x => x.status === "completed");
-            if (type === "pending") o = o.filter(x => x.status === "pending" || x.status === "partial");
-            if (type === "distributed") o = o.filter(x => x.status === "distributed");
-            displayOrders(o, "Single-Warehouse Orders");
-        }
+function showSingleWHOrders(type){
+    let o=applyFilters().filter(x=>x.warehouseCount===1);
+    if(type==="completed") o=o.filter(x=>x.status==="completed");
+    if(type==="pending") o=o.filter(x=>(x.status==="pending"||x.status==="partial")&&!x.distributor);
+    if(type==="distributed") o=o.filter(x=>x.status==="distributed");
+    displayOrders(o,"Single-Warehouse Orders");
+}
 
-        // DISPLAY ORDERS IN MODAL
-        function displayOrders(o, title = null) {
-            lastDisplayedOrders = o;
-            orderList.innerHTML = "";
-            orderDetailsTitle.textContent = title ? `Order Details - ${title}` : "Order Details";
+// DISPLAY ORDERS MODAL
+function displayOrders(o,title=null){
+    lastDisplayedOrders=o;
+    orderList.innerHTML="";
+    orderDetailsTitle.textContent = title?`Order Details - ${title}`:"Order Details";
 
-            o.forEach(x => {
-                const distributorText = x.status === "distributed" ? `Distributed by: ${x.distributor}` : "Not Distributed";
-                orderList.innerHTML += `
+    o.forEach(x=>{
+        orderList.innerHTML+=`
 <div class="warehouse-card">
- <b>Order:</b> ${x.orderNo} - ${x.status} - ${distributorText}
- <ul>${x.warehouses.map(w => `<li>${w.base} - ${w.packed ? "In-Packing" : "Pending"}</li>`).join("")}</ul>
+ <b>Order:</b> ${x.orderNo} - ${x.status}
+ <ul>${x.warehouses.map(w=>`<li>${w.base} - ${w.packed?"In-Packing":"Pending"}</li>`).join("")}</ul>
 </div>`;
-            });
+    });
 
-            orderDetails.classList.remove("hidden");
-        }
+    orderDetails.classList.remove("hidden");
+}
 
-        // EXPORT TO EXCEL
-        function exportOrderDetailsToExcel() {
-            if (!lastDisplayedOrders.length) return;
-            let csv = "Order No,Status,Warehouse,Packed,Distributed,Distributor\n";
-            lastDisplayedOrders.forEach(o => {
-                o.warehouses.forEach(w => {
-                    csv += `${o.orderNo},${o.status},${w.base},${w.packed ? "Yes" : "No"},${o.status === "distributed" ? "Yes" : "No"},${o.distributor || ""}\n`;
-                });
-            });
-            const blob = new Blob([csv], { type: "text/csv" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "order_details.csv";
-            a.click();
-        }
+// EXPORT TO EXCEL
+function exportOrderDetailsToExcel(){
+    if(!lastDisplayedOrders.length) return;
+    let csv="Order No,Status,Warehouse,Packed\n";
+    lastDisplayedOrders.forEach(o=>{
+        o.warehouses.forEach(w=>{
+            csv+=`${o.orderNo},${o.status},${w.base},${w.packed?"Yes":"No"}\n`;
+        });
+    });
+    const blob=new Blob([csv],{type:"text/csv"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="order_details.csv";
+    a.click();
+}
 
-        // CLOSE MODAL
-        function closeOrderDetails() { orderDetails.classList.add("hidden"); }
-        function signOut() { location.reload(); }
-        function showWarehouses() { window.location.href = "warehouses.html"; }
-    </script>
-
+// MODAL AND NAV
+function closeOrderDetails(){orderDetails.classList.add("hidden");}
+function signOut(){location.reload();}
+function showWarehouses(){window.location.href="warehouses.html";}
+</script>
 
 </body>
 
