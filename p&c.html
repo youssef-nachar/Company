@@ -23,14 +23,29 @@
         h2 {
             color: #22c55e;
             text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .pnc_warehouse {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
         }
 
         .card {
             background: #111827;
             border-radius: 16px;
             padding: 20px;
-            margin-bottom: 20px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+            flex: 1;
         }
 
         table {
@@ -51,111 +66,64 @@
             color: #22c55e;
         }
 
-        .chart-container {
-            position: relative;
-            width: 100%;
-            height: 250px;
-        }
-
-        input[type="date"] {
+        input[type="date"],
+        input[type="text"] {
             padding: 8px;
             border-radius: 8px;
             border: none;
             background: #020617;
             color: white;
-            margin: 0 5px;
         }
 
-        .filters {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
+        input[type="text"] {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        /* Responsive: stack sections on smaller screens */
+        @media (max-width: 1024px) {
+            .pnc_warehouse {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h2>P&C Warehouse</h2>
+    <h2>P&C Warehouse Dashboard</h2>
 
+    <!-- Date Filters -->
     <div class="filters">
         <label>From: <input type="date" id="dateFrom" onchange="updatePCDashboard()"></label>
         <label>To: <input type="date" id="dateTo" onchange="updatePCDashboard()"></label>
     </div>
 
-    <div class="card">
-        <div class="chart-container">
-            <canvas id="pcChart"></canvas>
+    <!-- Chart + Table side by side -->
+    <div class="pnc_warehouse">
+        <!-- Chart Section -->
+             <!-- Table + Search Section -->
+        <div class="card">
+            <h3 style="color:#22c55e;">Orders Table</h3>
+            <input type="text" id="pcOrderSearch" placeholder="Search Order # or Comment" oninput="updatePCSearch()">
+            <div id="pcOrdersTable"></div>
         </div>
+        <div class="card">
+            <h3 style="color:#22c55e;">Orders Summary</h3>
+            <canvas id="pcChart" width="400" height="300"></canvas>
+        </div>
+
+    
     </div>
-
-<div class="card">
-    <h3>Orders Table</h3>
-
-    <!-- Search input -->
-    <input type="text" id="pcOrderSearch" placeholder="Search Order #" 
-           style="width:100%; padding:10px; margin-bottom:12px; border-radius:8px; border:none; background:#020617; color:white"
-           oninput="updatePCSearch()">
-
-    <div id="pcOrdersTable"></div>
-</div>
 
     <script>
         const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
         let allOrders = [];
         let pcChart;
-function updatePCSearch() {
-    const query = document.getElementById("pcOrderSearch").value.trim().toLowerCase();
-
-    const tableDiv = document.getElementById("pcOrdersTable");
-    const orders = getPCOrders();
-
-    if (!query) {
-        renderPCTable(); // If search empty, show all
-        return;
-    }
-
-    const filtered = orders.filter(o =>
-        o.orderNo.toLowerCase().includes(query) ||
-        o.warehouses.find(w => w.base.toLowerCase() === 'p&c')?.comment?.toLowerCase().includes(query)
-    );
-
-    if (!filtered.length) {
-        tableDiv.innerHTML = "<p style='color:#f59e0b'>No matching orders found.</p>";
-        return;
-    }
-
-    tableDiv.innerHTML = `
-        <table>
-            <tr>
-                <th>Order #</th>
-                <th>Status</th>
-                <th>In-Packing</th>
-                <th>Pending</th>
-                <th>Distributed</th>
-                <th>Comment</th>
-            </tr>
-            ${filtered.map(o => {
-                const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
-                const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
-                return `
-                <tr>
-                    <td>${o.orderNo}</td>
-                    <td>${status}</td>
-                    <td>${wh.packed ? 1 : 0}</td>
-                    <td>${!wh.packed && !o.distributor ? 1 : 0}</td>
-                    <td>${o.distributor ? 1 : 0}</td>
-                    <td>${wh.comment || ''}</td>
-                </tr>`;
-            }).join('')}
-        </table>`;
-}
 
         function formatDateForInput(d) {
             if (!d || !d.includes("/")) return "";
             const p = d.split("/");
-            return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+            return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
         }
 
         function applyFilters() {
@@ -192,24 +160,19 @@ function updatePCSearch() {
                 <tr>
                     <th>Order #</th>
                     <th>Status</th>
-                    <th>In-Packing</th>
-                    <th>Pending</th>
-                    <th>Distributed</th>
+
                     <th>Comment</th>
                 </tr>
                 ${orders.map(o => {
-                    const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
-                    const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
-                    return `
+                const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
+                const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
+                return `
                     <tr>
                         <td>${o.orderNo}</td>
                         <td>${status}</td>
-                        <td>${wh.packed ? 1 : 0}</td>
-                        <td>${!wh.packed && !o.distributor ? 1 : 0}</td>
-                        <td>${o.distributor ? 1 : 0}</td>
                         <td>${wh.comment || ''}</td>
                     </tr>`;
-                }).join('')}
+            }).join('')}
             </table>`;
         }
 
@@ -230,11 +193,52 @@ function updatePCSearch() {
                     datasets: [{
                         label: 'Orders Count',
                         data: [inPacking, pending, distributed],
-                        backgroundColor: ['#22c55e','#f59e0b','#3b82f6']
+                        backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6']
                     }]
                 },
                 options: { responsive: true, plugins: { legend: { display: false } } }
             });
+        }
+
+        function updatePCSearch() {
+            const query = document.getElementById("pcOrderSearch").value.trim().toLowerCase();
+            const tableDiv = document.getElementById("pcOrdersTable");
+            const orders = getPCOrders();
+
+            if (!query) {
+                renderPCTable();
+                return;
+            }
+
+            const filtered = orders.filter(o =>
+                o.orderNo.toLowerCase().includes(query) ||
+                o.warehouses.find(w => w.base.toLowerCase() === 'p&c')?.comment?.toLowerCase().includes(query)
+            );
+
+            if (!filtered.length) {
+                tableDiv.innerHTML = "<p style='color:#f59e0b'>No matching orders found.</p>";
+                return;
+            }
+
+            tableDiv.innerHTML = `
+                <table>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Status</th>
+                        <th>Comment</th>
+                    </tr>
+                    ${filtered.map(o => {
+                const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
+                const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
+                return `
+                        <tr>
+                            <td>${o.orderNo}</td>
+                            <td>${status}</td>
+
+                            <td>${wh.comment || ''}</td>
+                        </tr>`;
+            }).join('')}
+                </table>`;
         }
 
         function updatePCDashboard() {
