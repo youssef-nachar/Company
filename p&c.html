@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <title>P&C Warehouse Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Inter, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #22c55e;
+            text-align: center;
+        }
+
+        .card {
+            background: #111827;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #020617;
+            color: #22c55e;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+        }
+
+        input[type="date"] {
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            background: #020617;
+            color: white;
+            margin: 0 5px;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>P&C Warehouse</h2>
+
+    <div class="filters">
+        <label>From: <input type="date" id="dateFrom" onchange="updatePCDashboard()"></label>
+        <label>To: <input type="date" id="dateTo" onchange="updatePCDashboard()"></label>
+    </div>
+
+    <div class="card">
+        <div class="chart-container">
+            <canvas id="pcChart"></canvas>
+        </div>
+    </div>
+
+<div class="card">
+    <h3>Orders Table</h3>
+
+    <!-- Search input -->
+    <input type="text" id="pcOrderSearch" placeholder="Search Order #" 
+           style="width:100%; padding:10px; margin-bottom:12px; border-radius:8px; border:none; background:#020617; color:white"
+           oninput="updatePCSearch()">
+
+    <div id="pcOrdersTable"></div>
+</div>
+
+    <script>
+        const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
+        let allOrders = [];
+        let pcChart;
+function updatePCSearch() {
+    const query = document.getElementById("pcOrderSearch").value.trim().toLowerCase();
+
+    const tableDiv = document.getElementById("pcOrdersTable");
+    const orders = getPCOrders();
+
+    if (!query) {
+        renderPCTable(); // If search empty, show all
+        return;
+    }
+
+    const filtered = orders.filter(o =>
+        o.orderNo.toLowerCase().includes(query) ||
+        o.warehouses.find(w => w.base.toLowerCase() === 'p&c')?.comment?.toLowerCase().includes(query)
+    );
+
+    if (!filtered.length) {
+        tableDiv.innerHTML = "<p style='color:#f59e0b'>No matching orders found.</p>";
+        return;
+    }
+
+    tableDiv.innerHTML = `
+        <table>
+            <tr>
+                <th>Order #</th>
+                <th>Status</th>
+                <th>In-Packing</th>
+                <th>Pending</th>
+                <th>Distributed</th>
+                <th>Comment</th>
+            </tr>
+            ${filtered.map(o => {
+                const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
+                const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
+                return `
+                <tr>
+                    <td>${o.orderNo}</td>
+                    <td>${status}</td>
+                    <td>${wh.packed ? 1 : 0}</td>
+                    <td>${!wh.packed && !o.distributor ? 1 : 0}</td>
+                    <td>${o.distributor ? 1 : 0}</td>
+                    <td>${wh.comment || ''}</td>
+                </tr>`;
+            }).join('')}
+        </table>`;
+}
+
+        function formatDateForInput(d) {
+            if (!d || !d.includes("/")) return "";
+            const p = d.split("/");
+            return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        }
+
+        function applyFilters() {
+            const from = dateFrom.value ? new Date(dateFrom.value) : null;
+            const to = dateTo.value ? new Date(dateTo.value) : null;
+
+            return allOrders.filter(o => {
+                if (!o.date) return false;
+                const orderDate = new Date(o.date);
+                if (from && orderDate < from) return false;
+                if (to && orderDate > to) return false;
+                return true;
+            });
+        }
+
+        function getPCOrders() {
+            const filtered = applyFilters();
+            return filtered.filter(o =>
+                o.warehouses.some(w => w.base.toLowerCase() === 'p&c')
+            );
+        }
+
+        function renderPCTable() {
+            const orders = getPCOrders();
+            const tableDiv = document.getElementById("pcOrdersTable");
+
+            if (!orders.length) {
+                tableDiv.innerHTML = "<p style='color:#f59e0b'>No orders for P&C.</p>";
+                return;
+            }
+
+            tableDiv.innerHTML = `
+            <table>
+                <tr>
+                    <th>Order #</th>
+                    <th>Status</th>
+                    <th>In-Packing</th>
+                    <th>Pending</th>
+                    <th>Distributed</th>
+                    <th>Comment</th>
+                </tr>
+                ${orders.map(o => {
+                    const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
+                    const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
+                    return `
+                    <tr>
+                        <td>${o.orderNo}</td>
+                        <td>${status}</td>
+                        <td>${wh.packed ? 1 : 0}</td>
+                        <td>${!wh.packed && !o.distributor ? 1 : 0}</td>
+                        <td>${o.distributor ? 1 : 0}</td>
+                        <td>${wh.comment || ''}</td>
+                    </tr>`;
+                }).join('')}
+            </table>`;
+        }
+
+        function renderPCChart() {
+            const orders = getPCOrders();
+            const inPacking = orders.filter(o => o.status === 'completed' || o.status === 'partial').length;
+            const pending = orders.filter(o => o.status === 'pending').length;
+            const distributed = orders.filter(o => o.status === 'distributed').length;
+
+            const ctx = document.getElementById('pcChart').getContext('2d');
+
+            if (pcChart) pcChart.destroy();
+
+            pcChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['In-Packing', 'Pending', 'Distributed'],
+                    datasets: [{
+                        label: 'Orders Count',
+                        data: [inPacking, pending, distributed],
+                        backgroundColor: ['#22c55e','#f59e0b','#3b82f6']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updatePCDashboard() {
+            renderPCTable();
+            renderPCChart();
+        }
+
+        // Load data
+        fetch(sheetURL)
+            .then(r => r.text())
+            .then(csv => {
+                const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+                const map = {};
+
+                rows.forEach(r => {
+                    const id = r["#M Order"];
+                    if (!id) return;
+
+                    if (!map[id]) {
+                        map[id] = {
+                            orderNo: id,
+                            date: formatDateForInput(r["Snapshot_Date"]),
+                            wh: {}
+                        };
+                    }
+
+                    let wh = (r["Warehouse Name"] || "").toLowerCase();
+                    let base = wh.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
+
+                    if (!map[id].wh[base]) {
+                        map[id].wh[base] = {
+                            base,
+                            packed: false,
+                            distributed: false,
+                            distributor: null,
+                            comment: ""
+                        };
+                    }
+
+                    if (r["comment"]) map[id].wh[base].comment = r["comment"];
+                    if (wh.includes("pack")) map[id].wh[base].packed = true;
+
+                    const d = (r["Distribution"] || "").toUpperCase();
+                    if (["LMD", "WAKILNI", "EMPLOYEE"].includes(d)) {
+                        map[id].wh[base].distributed = true;
+                        map[id].wh[base].distributor = d;
+                    }
+                });
+
+                allOrders = Object.values(map).map(o => {
+                    const warehouses = Object.values(o.wh);
+                    const packedCount = warehouses.filter(w => w.packed).length;
+                    const isDistributed = warehouses.some(w => w.distributed);
+
+                    let status = "pending";
+                    if (isDistributed) status = "distributed";
+                    else if (packedCount === warehouses.length) status = "completed";
+                    else if (packedCount > 0) status = "partial";
+
+                    return { ...o, status, warehouses };
+                });
+
+                // Init date filters
+                const dates = allOrders.map(o => o.date).filter(Boolean).sort();
+                if (dates.length) {
+                    dateFrom.value = dates[0];
+                    dateTo.value = dates[dates.length - 1];
+                }
+
+                updatePCDashboard();
+            });
+    </script>
+</body>
+</html>
