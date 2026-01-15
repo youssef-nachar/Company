@@ -955,19 +955,39 @@ ${Object.entries(m).map(([k, v]) => `
 
         // EXPORT TO EXCEL
         function exportOrderDetailsToExcel() {
-            const data = lastDisplayedOrders.map(o => {
-                const whs = o.warehouses.map(w => `${w.base} (${w.packed ? "In-Packing" : "Pending"})`).join(", ");
-                return { Order: o.orderNo, Status: o.status, Warehouses: whs };
-            });
-            const csvContent = "data:text/csv;charset=utf-8," +
-                [Object.keys(data[0]).join(","), ...data.map(d => Object.values(d).join(","))].join("\n");
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "order_details.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+    if (!lastDisplayedOrders.length) {
+        alert("No orders to export!");
+        return;
+    }
+
+    // تحويل البيانات للـ CSV
+    const data = lastDisplayedOrders.map(o => {
+        const whs = o.warehouses.map(w => {
+            let status = w.packed ? "In-Packing" : "Pending";
+            if (w.distributed) status = "Distributed";
+            return `${w.base} (${status})`;
+        }).join(", ");
+
+        return {
+            Order: o.orderNo,
+            Status: o.status,
+            Warehouses: whs,
+            Distributor: o.distributor || ""
+        };
+    });
+
+    // إنشاء CSV string
+    const csvContent = "data:text/csv;charset=utf-8," +
+        [Object.keys(data[0]).join(","), ...data.map(d => Object.values(d).join(","))].join("\n");
+
+    // إنشاء رابط تحميل
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "order_details.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
         }
 
         // SHOW WAREHOUSES PAGE
