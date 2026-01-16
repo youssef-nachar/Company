@@ -1,323 +1,343 @@
 <!DOCTYPE html>
-<html lang="ar">
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>P&C Warehouse Dashboard</title>
+    <title>Warehouse Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        body {
-            font-family: Inter, sans-serif;
-            background: #0f172a;
-            color: #e5e7eb;
-            margin: 0;
-            padding: 20px;
+        :root {
+            --bg: #0f172a;
+            --sidebar: #020617;
+            --card: #111827;
+            --accent: #22c55e;
+            --warning: #f59e0b;
+            --text: #e5e7eb;
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, sans-serif; }
+        body { background: var(--bg); color: var(--text); }
+        .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
 
-        h2 {
-            color: #22c55e;
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        /* SIDEBAR */
+        .sidebar { background: var(--sidebar); padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .sidebar h2 { color: var(--accent); }
+        .sidebar a { color: var(--text); text-decoration: none; padding: 10px; border-radius: 8px; display: block; }
+        .sidebar a:hover { background: #111827; }
 
-        .filters {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
-        }
+        .menu-item>a { display: flex; justify-content: space-between; align-items: center; }
+        .submenu, .subsubmenu { display: none; margin-top: 6px; margin-left: 10px; }
+        .submenu a, .subsubmenu a { display: block; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+        .submenu a:hover, .subsubmenu a:hover { background: #111827; }
+        .subsubmenu { margin-left: 14px; border-left: 2px solid #1f2937; padding-left: 10px; }
+        .arrow { font-size: 12px; transition: transform 0.2s ease; }
+        .menu-open>a .arrow { transform: rotate(180deg); }
 
-        .pnc_warehouse {
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-        }
+        /* MAIN CONTENT */
+        .main-content { padding: 20px; }
+        .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .kpi { background: #020617; padding: 18px; border-radius: 14px; text-align: center; }
+        .kpi .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
 
-        .card {
-            background: #111827;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
-            flex: 1;
-        }
+        .pnc_warehouse { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: var(--card); border-radius: 16px; padding: 20px; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 12px;
-        }
+        table { width:100%; border-collapse: collapse; margin-top:12px; }
+        th, td { border:1px solid #333; padding:8px; text-align:center; }
+        th { background:#111827; color:var(--accent); }
 
-        th,
-        td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: center;
-        }
-
-        th {
-            background: #020617;
-            color: #22c55e;
-        }
-
-        input[type="date"],
-        input[type="text"] {
-            padding: 8px;
-            border-radius: 8px;
-            border: none;
-            background: #020617;
-            color: white;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            margin-bottom: 12px;
-        }
-
-        /* Responsive: stack sections on smaller screens */
-        @media (max-width: 1024px) {
-            .pnc_warehouse {
-                flex-direction: column;
-            }
-        }
+        input { width:100%; padding:8px; border-radius:8px; background:#020617; border:1px solid #1f2937; color:white; margin-bottom:8px; }
+        @media (max-width:1024px){ .pnc_warehouse{grid-template-columns:1fr;} }
     </style>
 </head>
 
 <body>
-    <header>
-       <a href="./index.html">
+<div class="app">
 
-           <button >Main page</button>
+    <!-- Sidebar -->
+<aside class="sidebar">
+    <h2><i class="fa-solid fa-warehouse"></i> Warehouse Mgmt</h2>
 
-       </a>
-        <h2>P&C Warehouse Dashboard</h2>
+    <div class="menu-item">
+        <a href="#" onclick="toggleMenu('warehousesMenu')">
+            <i class="fa-solid fa-boxes-stacked"></i> Warehouses
+            <i class="fa-solid fa-chevron-down arrow"></i>
+        </a>
 
-    </header>
+        <div id="warehousesMenu" class="submenu">
 
-    <!-- Date Filters -->
-    <div class="filters">
-        <label>From: <input type="date" id="dateFrom" onchange="updatePCDashboard()"></label>
-        <label>To: <input type="date" id="dateTo" onchange="updatePCDashboard()"></label>
-    </div>
+            <!-- P&C -->
+            <div class="submenu-item">
+                <a href="#" onclick="toggleMenu('pcMenu')">P&amp;C</a>
+                <div id="pcMenu" class="subsubmenu">
+                    <a href="#" onclick="selectWarehouse('p&c')">MyHoldal</a>
+                    <a href="#">Return</a>
+                    <a href="#">KPI</a>
+                </div>
+            </div>
 
-    <!-- Chart + Table side by side -->
-    <div class="pnc_warehouse">
-        <!-- Chart Section -->
-             <!-- Table + Search Section -->
-        <div class="card">
-            <h3 style="color:#22c55e;">Orders Table</h3>
-            <input type="text" id="pcOrderSearch" placeholder="Search Order # or Comment" oninput="updatePCSearch()">
-            <div id="pcOrdersTable"></div>
+            <!-- Pharma -->
+            <div class="submenu-item">
+                <a href="#" onclick="toggleMenu('pharmaMenu')">Pharma</a>
+                <div id="pharmaMenu" class="subsubmenu">
+                    <a href="#" onclick="selectWarehouse('pharma')">MyHoldal</a>
+                    <a href="#">Return</a>
+                    <a href="#">KPI</a>
+                </div>
+            </div>
+
+            <!-- Retail -->
+            <div class="submenu-item">
+                <a href="#" onclick="toggleMenu('retailMenu')">Retail</a>
+                <div id="retailMenu" class="subsubmenu">
+                    <a href="#" onclick="selectWarehouse('retail')">MyHoldal</a>
+                    <a href="#">Return</a>
+                    <a href="#">KPI</a>
+                </div>
+            </div>
+
+            <!-- L’Oréal Lux -->
+            <div class="submenu-item">
+                <a href="#" onclick="toggleMenu('lorealMenu')">L’Oréal Lux</a>
+                <div id="lorealMenu" class="subsubmenu">
+                    <a href="#" onclick="selectWarehouse('loreal')">MyHoldal</a>
+                    <a href="#">Return</a>
+                    <a href="#">KPI</a>
+                </div>
+            </div>
+
+            <!-- Beesline -->
+            <div class="submenu-item">
+                <a href="#" onclick="toggleMenu('beeslineMenu')">Beesline</a>
+                <div id="beeslineMenu" class="subsubmenu">
+                    <a href="#" onclick="selectWarehouse('beesline')">MyHoldal</a>
+                    <a href="#">Return</a>
+                    <a href="#">KPI</a>
+                </div>
+            </div>
+
         </div>
-        <div class="card">
-            <h3 style="color:#22c55e;">Orders Summary</h3>
-            <canvas id="pcChart" width="400" height="300"></canvas>
+    </div>
+</aside>
+
+
+
+    <!-- Main content -->
+    <div class="main-content">
+
+        <!-- KPIs -->
+        <div class="kpis">
+            <div class="kpi">
+                <div>Total Orders</div>
+                <div id="totalOrders" class="value">0</div>
+            </div>
+            <div class="kpi">
+                <div>Issued</div>
+                <div id="issuedOrders" class="value success">0</div>
+            </div>
+            <div class="kpi">
+                <div>Pending</div>
+                <div id="pendingOrders" class="value warning">0</div>
+            </div>
+            <div class="kpi">
+                <div>Avg Prep Time</div>
+                <div id="avgPrep" class="value">0 min</div>
+            </div>
         </div>
 
-    
+        <!-- Search + Tables -->
+        <div class="pnc_warehouse">
+
+            <!-- Issued -->
+            <div class="card">
+                <h3 style="color:#22c55e;">Issued Orders</h3>
+                <input type="text" id="issuedSearch" placeholder="Search Order #" oninput="renderIssuedTable()">
+                <div id="issuedTable"></div>
+            </div>
+
+            <!-- Pending -->
+            <div class="card">
+                <h3 style="color:#f59e0b;">Pending Orders</h3>
+                <input type="text" id="pendingSearch" placeholder="Search Order # or Comment" oninput="renderPendingTable()">
+                <div id="pendingTable"></div>
+            </div>
+
+        </div>
     </div>
+</div>
 
-    <script>
-        const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
-        let allOrders = [];
-        let pcChart;
+<script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmcU44IrVbsgFcrMJ1TxA0xnjwBQa9cD6NKPf-jmVaDNIMaNOMa14pU0eRSh9QLw/pub?output=csv";
 
-        function formatDateForInput(d) {
-            if (!d || !d.includes("/")) return "";
-            const p = d.split("/");
-            return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
-        }
+    let allOrders = [];
+    let currentWarehouse = "p&c";
+    let issuedOrders = [];
+    let pendingOrders = [];
 
-        function applyFilters() {
-            const from = dateFrom.value ? new Date(dateFrom.value) : null;
-            const to = dateTo.value ? new Date(dateTo.value) : null;
+    // تعديل normalize للتعامل مع P&C بشكل صحيح
+ function normalize(s) {
+    if (!s) return "";
+    return s.toLowerCase().replace(/\s+/g, "");
+}
 
-            return allOrders.filter(o => {
-                if (!o.date) return false;
-                const orderDate = new Date(o.date);
-                if (from && orderDate < from) return false;
-                if (to && orderDate > to) return false;
-                return true;
+    function toggleMenu(id){
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display==='block') ? 'none':'block';
+    }
+
+    function parseDate(d) {
+        const t = new Date(d);
+        return isNaN(t) ? null : t;
+    }
+
+    function minutesDiff(a, b) {
+        return Math.round((b - a) / 60000);
+    }
+
+    // Fetch & prepare data once
+    fetch(sheetURL)
+        .then(r => r.text())
+        .then(csv => {
+            const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+            const map = {};
+
+           rows.forEach(r => {
+    const id = r["#M Order"];
+    if (!id) return;
+
+    if (!map[id]) {
+        map[id] = { order: id, warehouses: {} };
+    }
+
+    let whName = (r["Warehouse Name"] || "").trim().toLowerCase();
+
+    // إزالة ---pack و WH من الاسم
+    let base = whName.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
+
+    // تطبيق normalize على base
+    base = normalize(base);
+
+    if (!map[id].warehouses[base]) {
+        map[id].warehouses[base] = { packed: false, comment: "" };
+    }
+
+    if (r["comment"]) map[id].warehouses[base].comment = r["comment"];
+
+    if (whName.includes("pack")) {
+        map[id].warehouses[base].packed = true;
+    }
+
+    const time = parseDate(r["Order Received in WH"]);
+    if (time) {
+        const w = map[id].warehouses[base];
+        if (!w.whTime || time < w.whTime) w.whTime = time;
+    }
+
+    const packTime = parseDate(r["Order Received in WH"]);
+    if (whName.includes("pack") && packTime) {
+        const w = map[id].warehouses[base];
+        if (!w.packTime || packTime > w.packTime) w.packTime = packTime;
+    }
+});
+
+            allOrders = Object.values(map);
+            selectWarehouse(currentWarehouse);
+        });
+
+function selectWarehouse(key) {
+    currentWarehouse = key;
+
+    issuedOrders = [];
+    pendingOrders = [];
+
+    allOrders.forEach(o => {
+        const whData = o.warehouses[normalize(currentWarehouse)];
+        if (!whData) return;
+
+        const whTime = whData.whTime || null;
+        const packTime = whData.packTime || null;
+
+        // إذا order يحتوي على ---pack تُحسب كـ issued
+        if (whData.packed) {
+            issuedOrders.push({
+                order: o.order,
+                whTime,
+                packTime: packTime || whTime, // إذا لم يوجد packTime استخدم whTime
+                prep: packTime ? minutesDiff(whTime, packTime) : 0,
+                comment: whData.comment || ""
+            });
+        } else if (whTime) {
+            pendingOrders.push({
+                order: o.order,
+                whTime,
+                comment: whData.comment || ""
             });
         }
+    });
 
-        function getPCOrders() {
-            const filtered = applyFilters();
-            return filtered.filter(o =>
-                o.warehouses.some(w => w.base.toLowerCase() === 'p&c')
-            );
-        }
+    renderIssuedTable();
+    renderPendingTable();
+    updateKPIs();
+}
 
-        function renderPCTable() {
-            const orders = getPCOrders();
-            const tableDiv = document.getElementById("pcOrdersTable");
 
-            if (!orders.length) {
-                tableDiv.innerHTML = "<p style='color:#f59e0b'>No orders for P&C.</p>";
-                return;
-            }
-
-            tableDiv.innerHTML = `
-            <table>
+    function renderIssuedTable() {
+        const q = document.getElementById("issuedSearch").value.toLowerCase();
+        const filtered = issuedOrders.filter(o => o.order.toLowerCase().includes(q));
+        document.getElementById("issuedTable").innerHTML = `
+        <table>
+            <tr>
+                <th>Order #</th>
+                <th>Delivered to Packing</th>
+                <th>Preparation Time (min)</th>
+            </tr>
+            ${filtered.map(o => `
                 <tr>
-                    <th>Order #</th>
-                    <th>Status</th>
+                    <td>${o.order}</td>
+                    <td>${o.packTime.toLocaleString()}</td>
+                    <td>${o.prep}</td>
+                </tr>`).join("")}
+        </table>`;
+    }
 
-                    <th>Comment</th>
-                </tr>
-                ${orders.map(o => {
-                const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
-                const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
-                return `
-                    <tr>
-                        <td>${o.orderNo}</td>
-                        <td>${status}</td>
-                        <td>${wh.comment || ''}</td>
-                    </tr>`;
-            }).join('')}
-            </table>`;
-        }
+    function renderPendingTable() {
+        const q = document.getElementById("pendingSearch").value.toLowerCase();
+        const filtered = pendingOrders.filter(o =>
+            o.order.toLowerCase().includes(q) ||
+            o.comment.toLowerCase().includes(q)
+        );
+        document.getElementById("pendingTable").innerHTML = `
+        <table>
+            <tr>
+                <th>Order #</th>
+                <th>Received at WH</th>
+                <th>Comment</th>
+            </tr>
+            ${filtered.map(o => `
+                <tr>
+                    <td>${o.order}</td>
+                    <td>${o.whTime.toLocaleString()}</td>
+                    <td>${o.comment}</td>
+                </tr>`).join("")}
+        </table>`;
+    }
 
-        function renderPCChart() {
-            const orders = getPCOrders();
-            const inPacking = orders.filter(o => o.status === 'completed' || o.status === 'partial').length;
-            const pending = orders.filter(o => o.status === 'pending').length;
-            const distributed = orders.filter(o => o.status === 'distributed').length;
+    function updateKPIs() {
+        const total = issuedOrders.length + pendingOrders.length;
+        const issued = issuedOrders.length;
+        const pending = pendingOrders.length;
+        const avgPrep = issued ? Math.round(issuedOrders.reduce((a,o)=>a+o.prep,0)/issued) : 0;
 
-            const ctx = document.getElementById('pcChart').getContext('2d');
+        document.getElementById("totalOrders").textContent = total;
+        document.getElementById("issuedOrders").textContent = issued;
+        document.getElementById("pendingOrders").textContent = pending;
+        document.getElementById("avgPrep").textContent = avgPrep + " min";
+    }
+</script>
 
-            if (pcChart) pcChart.destroy();
-
-            pcChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['In-Packing', 'Pending', 'Distributed'],
-                    datasets: [{
-                        label: 'Orders Count',
-                        data: [inPacking, pending, distributed],
-                        backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6']
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
-        }
-
-        function updatePCSearch() {
-            const query = document.getElementById("pcOrderSearch").value.trim().toLowerCase();
-            const tableDiv = document.getElementById("pcOrdersTable");
-            const orders = getPCOrders();
-
-            if (!query) {
-                renderPCTable();
-                return;
-            }
-
-            const filtered = orders.filter(o =>
-                o.orderNo.toLowerCase().includes(query) ||
-                o.warehouses.find(w => w.base.toLowerCase() === 'p&c')?.comment?.toLowerCase().includes(query)
-            );
-
-            if (!filtered.length) {
-                tableDiv.innerHTML = "<p style='color:#f59e0b'>No matching orders found.</p>";
-                return;
-            }
-
-            tableDiv.innerHTML = `
-                <table>
-                    <tr>
-                        <th>Order #</th>
-                        <th>Status</th>
-                        <th>Comment</th>
-                    </tr>
-                    ${filtered.map(o => {
-                const wh = o.warehouses.find(w => w.base.toLowerCase() === 'p&c');
-                const status = o.status === "distributed" ? "Distributed" : wh.packed ? "In-Packing" : "Pending";
-                return `
-                        <tr>
-                            <td>${o.orderNo}</td>
-                            <td>${status}</td>
-
-                            <td>${wh.comment || ''}</td>
-                        </tr>`;
-            }).join('')}
-                </table>`;
-        }
-
-        function updatePCDashboard() {
-            renderPCTable();
-            renderPCChart();
-        }
-
-        // Load data
-        fetch(sheetURL)
-            .then(r => r.text())
-            .then(csv => {
-                const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
-                const map = {};
-
-                rows.forEach(r => {
-                    const id = r["#M Order"];
-                    if (!id) return;
-
-                    if (!map[id]) {
-                        map[id] = {
-                            orderNo: id,
-                            date: formatDateForInput(r["Snapshot_Date"]),
-                            wh: {}
-                        };
-                    }
-
-                    let wh = (r["Warehouse Name"] || "").toLowerCase();
-                    let base = wh.replace(/---pack/g, "").replace(/\s*wh/g, "").trim();
-
-                    if (!map[id].wh[base]) {
-                        map[id].wh[base] = {
-                            base,
-                            packed: false,
-                            distributed: false,
-                            distributor: null,
-                            comment: ""
-                        };
-                    }
-
-                    if (r["comment"]) map[id].wh[base].comment = r["comment"];
-                    if (wh.includes("pack")) map[id].wh[base].packed = true;
-
-                    const d = (r["Distribution"] || "").toUpperCase();
-                    if (["LMD", "WAKILNI", "EMPLOYEE"].includes(d)) {
-                        map[id].wh[base].distributed = true;
-                        map[id].wh[base].distributor = d;
-                    }
-                });
-
-                allOrders = Object.values(map).map(o => {
-                    const warehouses = Object.values(o.wh);
-                    const packedCount = warehouses.filter(w => w.packed).length;
-                    const isDistributed = warehouses.some(w => w.distributed);
-
-                    let status = "pending";
-                    if (isDistributed) status = "distributed";
-                    else if (packedCount === warehouses.length) status = "completed";
-                    else if (packedCount > 0) status = "partial";
-
-                    return { ...o, status, warehouses };
-                });
-
-                // Init date filters
-                const dates = allOrders.map(o => o.date).filter(Boolean).sort();
-                if (dates.length) {
-                    dateFrom.value = dates[0];
-                    dateTo.value = dates[dates.length - 1];
-                }
-
-                updatePCDashboard();
-            });
-    </script>
 </body>
 </html>
+
